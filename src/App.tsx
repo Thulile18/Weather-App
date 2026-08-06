@@ -4,7 +4,7 @@ import Home from './Components/Pages/Home';
 import Header from './Components/Layout/Header';
 import Favourites from './Components/Pages/Favourites';
 import { WeatherStorageService } from './Components/Services/LocalStorageServices'; 
-import './App.css';
+import './App.css'; 
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -34,13 +34,18 @@ const App: React.FC = () => {
   return (
     <Router>
       <div className={`app-canvas-frame ${theme}-theme-active`}>
+        
         <Header theme={theme} onToggleTheme={toggleTheme} />
+        
         <main className="main-content-viewport">
           <Routes>
+           
             <Route path="/" element={<Home />} />
+            
             <Route path="/favorites" element={<Favourites />} />
           </Routes>
         </main>
+        
       </div>
     </Router>
   );
