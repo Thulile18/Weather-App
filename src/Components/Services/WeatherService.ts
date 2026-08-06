@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { WeatherData, ForecastData, HourlyForecast, DailyForecast, WeatherAlert } from '../Types/Weather.types';
 
-const API_KEY = 'YOUR_API_KEY_HERE';
+const API_KEY = '8bb16bb5510615456144f052661fbf80';
 const BASE_URL = 'https://openweathermap.org';
 
 export class WeatherService {
