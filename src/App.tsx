@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './Components/Pages/Home';
-import Header from './Components/Layout/Header';
 import Favourites from './Components/Pages/Favourites';
-import { WeatherStorageService } from './Components/Services/LocalStorageServices'; 
-import './App.css'; 
+import Settings from './Components/Settings/Settings';
+import Header from './Components/Layout/Header';
+import { WeatherStorageService } from './Components/Services/LocalStorageServices';
+import './App.css';
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -19,33 +20,25 @@ const App: React.FC = () => {
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
-     
     const settings = storage.getSettings();
-    storage.saveSettings({ 
-      ...settings, 
-      theme: newTheme 
-    });
+    storage.saveSettings({ ...settings, theme: newTheme });
   };
 
   useEffect(() => {
-    document.body.className = theme === 'dark' ? 'dark-body-reset' : 'light-body-reset';
+    document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
   return (
-    <Router>
-      <div className={`app-canvas-frame ${theme}-theme-active`}>
-        
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <div className="app-viewport-root">
         <Header theme={theme} onToggleTheme={toggleTheme} />
-        
-        <main className="main-content-viewport">
+        <main className="app-main-content-layout">
           <Routes>
-           
             <Route path="/" element={<Home />} />
-            
-            <Route path="/favorites" element={<Favourites />} />
+            <Route path="/favourites" element={<Favourites />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
-        
       </div>
     </Router>
   );

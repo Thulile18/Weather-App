@@ -1,80 +1,160 @@
 import React from 'react';
-import { useWeather } from '../Hooks/UseWeather'; 
+import { useWeather } from '../Hooks/UseWeather';
 import Button from '../Button';
 import Card from '../Card';
-import { Link } from 'react-router-dom'; 
+import { Link } from 'react-router-dom';
+import { NotificationService } from '../Utils/Notifications.ts';
+import './Settings.css'; 
 
 const Settings: React.FC = () => {
   const { settings, updateSettings } = useWeather();
 
-  if (!settings) {
-    return <div className="status-label-text"> Retrieving user profiles... </div>;
-  }
+  if (!settings) return null;
 
-  const handleToggleTheme = () => {
+  const toggleTheme = () => {
     updateSettings({
       ...settings,
       theme: settings.theme === 'light' ? 'dark' : 'light'
     });
   };
 
-  const handleToggleUnit = () => {
+  const toggleUnit = () => {
     updateSettings({
       ...settings,
       unit: settings.unit === 'celsius' ? 'fahrenheit' : 'celsius'
     });
   };
 
+  const requestNotificationPermission = async () => {
+    const granted = await NotificationService.requestPermission();
+    if (granted) {
+      alert('Notifications enabled! You will receive weather alerts.');
+    } else {
+      alert('Please allow notifications in your browser settings to receive weather alerts.');
+    }
+  };
+
+  const clearAllData = () => {
+    if (window.confirm('Are you sure you want to clear all saved data? This cannot be undone.')) {
+      localStorage.clear();
+      alert('All data cleared! The page will now refresh.');
+      window.location.reload();
+    }
+  };
+
   return (
-    <div className="settings-page-wrapper">
-      <h2 className="settings-section-heading"> App Preferences Configuration </h2>
+    <div className="settings-container">
+      <h2 className="settings-heading"> Settings </h2>
       
-      <div className="settings-vertical-stack">
-        
-        <Card className="settings-control-card">
-          <div className="settings-item-row-layout">
-            <div className="settings-text-meta-block">
-              <h3 className="settings-item-title"> Color Theme Style </h3>
-              <p className="settings-item-description">
-                Currently Active: <strong>{settings.theme === 'light' ? ' Light Mode' : ' Dark Mode'}</strong>
+      <div className="settings-wrapper">
+        <Card>
+          <div className="settings-item-row">
+            <div className="settings-text-group">
+              <h3 className="settings-item-title"> Theme </h3>
+              <p className="settings-info-text">
+                Currently: {settings.theme === 'light' ? 'Light Mode' : 'Dark Mode'}
               </p>
             </div>
-            <Button onClick={handleToggleTheme} variant="secondary" size="sm">
-              Change Style
+            <Button onClick={toggleTheme} variant="secondary" size="sm">
+              {settings.theme === 'light' ? 'Switch to Dark' : 'Switch to Light'}
             </Button>
           </div>
         </Card>
 
-        <Card className="settings-control-card">
-          <div className="settings-item-row-layout">
-            <div className="settings-text-meta-block">
-              <h3 className="settings-item-title"> Temperature Measurement Unit </h3>
-              <p className="settings-item-description">
-                Currently Active: <strong>{settings.unit === 'celsius' ? '°C Celsius Scale' : '°F Fahrenheit Scale'}</strong>
+        <Card>
+          <div className="settings-item-row">
+            <div className="settings-text-group">
+              <h3 className="settings-item-title"> Temperature Unit </h3>
+              <p className="settings-info-text">
+                Currently: {settings.unit === 'celsius' ? '°C Celsius' : '°F Fahrenheit'}
               </p>
             </div>
-            <Button onClick={handleToggleUnit} variant="secondary" size="sm">
-              Switch Scales
+            <Button onClick={toggleUnit} variant="secondary" size="sm">
+              Switch to {settings.unit === 'celsius' ? '°F' : '°C'}
             </Button>
           </div>
         </Card>
 
-        <Card className="settings-control-card">
-          <div className="settings-item-row-layout">
-            <div className="settings-text-meta-block">
-              <h3 className="settings-item-title"> Your Pin Portfolio </h3>
-              <p className="settings-item-description">
-                You have logged <strong>{settings.favouriteLocations.length} locations</strong> in browser memory
+        <Card>
+          <div className="settings-item-row">
+            <div className="settings-text-group">
+              <h3 className="settings-item-title"> Weather Alerts </h3>
+              <p className="settings-info-text">
+                {'Notification' in window && Notification.permission === 'granted' 
+                  ? 'Notifications enabled' 
+                  : 'Notifications disabled'}
+              </p>
+              <p className="settings-sub-text">
+                Receive push notifications for severe weather alerts
               </p>
             </div>
-            <Link to="/favorites">
+            <Button 
+              onClick={requestNotificationPermission} 
+              variant="primary" 
+              size="sm"
+            >
+              {'Notification' in window && Notification.permission === 'granted' ? 'Enabled' : 'Enable'}
+            </Button>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="settings-item-row">
+            <div className="settings-text-group">
+              <h3 className="settings-item-title"> Favorite Locations </h3>
+              <p className="settings-info-text">
+                {settings.favouriteLocations.length} locations saved
+              </p>
+              {settings.favouriteLocations.length > 0 && (
+                <div className="favorite-chips-container">
+                  {settings.favouriteLocations.map((loc: string, index: number) => (
+                    <span key={index} className="favorite-chip">
+                      {loc}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <Link to="/favourites">
               <Button variant="primary" size="sm">
-                Manage Portfolio
+                Manage
               </Button>
             </Link>
           </div>
         </Card>
 
+        <Card>
+          <div className="settings-text-group">
+            <h3 className="settings-item-title"> About </h3>
+            <p className="settings-info-text"> Weather App </p>
+            <p className="settings-sub-text">
+              Built with React, TypeScript, and Pure Vanilla CSS
+            </p>
+            <p className="settings-sub-text">
+              Data provided by OpenWeatherMap
+            </p>
+          </div>
+        </Card>
+
+        <Card className="danger-zone-card">
+          <div className="settings-item-row">
+            <div className="settings-text-group">
+              <h3 className="settings-item-title danger-title"> Danger Zone </h3>
+              <p className="settings-info-text">
+                Clear all saved data from localStorage
+              </p>
+            </div>
+            <Button onClick={clearAllData} variant="danger" size="sm">
+              Clear All Data
+            </Button>
+          </div>
+        </Card>
+
+        <div className="back-button-row">
+          <Link to="/">
+            <Button variant="secondary"> Back to Home </Button>
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -2,17 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useWeather } from '../Hooks/UseWeather';
 import { useLocation } from '../Hooks/UseLocation';
 import WeatherDisplay from '../../Weather/WeatherDisplay';
-import HourlyForecast from '../../Weather/HourlyForecast';
-import DailyForecast from '../../Weather/DailyForecast';
-import WeatherAlert from '../../Weather/WeatherAlert';
+import DailyForecast from '../..//Weather/DailyForecast';
+import WeatherAlert from '../..//Weather/WeatherAlert';
 import Button from '../Button';
 import Input from '../Input';
-import type { WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
+import { Link } from 'react-router-dom'; 
+import type{ WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
+import { NotificationService } from '../Utils/Notifications';
+import './Home.css'; 
+import HourlyForecast from '../../Weather/HourlyForecast';
 
 const Home: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewType, setViewType] = useState<'hourly' | 'daily'>('hourly');
   const [alerts, setAlerts] = useState<WeatherAlertType[]>([]);
+  const [notificationPermission, setNotificationPermission] = useState<boolean>(false);
   
   const {
     currentWeather,
@@ -32,6 +36,14 @@ const Home: React.FC = () => {
   const favorites = getFavoriteLocations();
 
   useEffect(() => {
+    const checkPermission = async () => {
+      const granted = await NotificationService.requestPermission();
+      setNotificationPermission(granted);
+    };
+    checkPermission();
+  }, []);
+
+  useEffect(() => {
     if (userLocation && !currentWeather) {
       fetchWeatherByCoords(userLocation.lat, userLocation.lon);
     }
@@ -43,20 +55,72 @@ const Home: React.FC = () => {
       
       if (currentWeather.temperature > 35) {
         newAlerts.push({
-          type: 'Extreme Heat Warning',
+          type: 'Heat Warning',
           severity: 'warning',
-          message: 'Extreme temperature thresholds exceeded. Stay hydrated and avoid outdoor exposure.',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          message: 'Extreme heat detected. Stay hydrated and avoid prolonged sun exposure.',
+          time: new Date().toLocaleString()
         });
+        NotificationService.sendWeatherAlert(
+          currentWeather.location,
+          'Extreme heat detected! Stay hydrated.',
+          'warning'
+        );
       }
       
       if (currentWeather.windspeed > 15) { 
         newAlerts.push({
-          type: 'Gale Force Wind Advisory',
+          type: 'Wind Advisory',
           severity: 'watch',
-          message: 'High speed turbulence active. Secure loose outdoor property.',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          message: 'High winds expected. Secure outdoor objects.',
+          time: new Date().toLocaleString()
         });
+        NotificationService.sendWeatherAlert(
+          currentWeather.location,
+          'High winds expected! Secure outdoor objects.',
+          'watch'
+        );
+      }
+
+      if (currentWeather.temperature < 0) {
+        newAlerts.push({
+          type: 'Freeze Warning',
+          severity: 'warning',
+          message: 'Freezing temperatures detected. Protect plants and pipes.',
+          time: new Date().toLocaleString()
+        });
+        NotificationService.sendWeatherAlert(
+          currentWeather.location,
+          'Freezing temperatures! Protect plants and pipes.',
+          'warning'
+        );
+      }
+
+      if (currentWeather.condition.toLowerCase().includes('rain') && currentWeather.temperature > 30) {
+        newAlerts.push({
+          type: 'Storm Alert',
+          severity: 'watch',
+          message: 'Rain with high temperatures. Stay prepared.',
+          time: new Date().toLocaleString()
+        });
+        NotificationService.sendWeatherAlert(
+          currentWeather.location,
+          'Rain with high temperatures. Be prepared.',
+          'watch'
+        );
+      }
+
+      if (currentWeather.condition.toLowerCase().includes('fog')) {
+        newAlerts.push({
+          type: 'Fog Advisory',
+          severity: 'advisory',
+          message: 'Low visibility due to fog. Drive carefully.',
+          time: new Date().toLocaleString()
+        });
+        NotificationService.sendWeatherAlert(
+          currentWeather.location,
+          'Low visibility due to fog. Drive carefully.',
+          'advisory'
+        );
       }
 
       setAlerts(newAlerts);
@@ -70,7 +134,7 @@ const Home: React.FC = () => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
@@ -100,10 +164,10 @@ const Home: React.FC = () => {
 
   if (loading || locationLoading) {
     return (
-      <div className="status-centered-viewport">
-        <div className="status-card-inner">
-          <div className="loading-pulse-animation"></div>
-          <p className="status-label-text"> Retrieving real-time atmospheric payload coordinates...</p>
+      <div className="home-status-centered-canvas">
+        <div className="status-message-wrapper">
+          <div className="status-spinner-element"> Syncing </div>
+          <p className="status-caption"> Loading meteorological data... </p>
         </div>
       </div>
     );
@@ -111,21 +175,29 @@ const Home: React.FC = () => {
 
   if (error) {
     return (
-      <div className="status-centered-viewport">
-        <div className="status-card-inner">
-          <div className="error-icon-emoji"></div>
-          <p className="error-label-text">{error}</p>
-          <Button onClick={() => window.location.reload()} variant="danger">Try Again</Button>
+      <div className="home-status-centered-canvas">
+        <div className="status-message-wrapper">
+          <div className="error-title-marker">Notice</div>
+          <p className="error-text-details">{error}</p>
+          <Button onClick={() => window.location.reload()}> Try Again </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="home-dashboard-layout-view">
-      
+    <div className="home-page-container">
+      {!notificationPermission && (
+        <div className="notification-reminder-banner">
+          Attention: Enable notifications in system settings to receive push updates.
+          <Link to="/settings" className="settings-redirect-link">
+            Open Settings →
+          </Link>
+        </div>
+      )}
+
       {alerts.length > 0 && (
-        <div className="dashboard-notifications-stack">
+        <div className="active-alerts-stack">
           {alerts.map((alert, index) => (
             <WeatherAlert
               key={index}
@@ -136,23 +208,23 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      <div className="dashboard-search-control-block">
-        <div className="input-inline-group-form">
+      <div className="search-controls-wrapper">
+        <div className="search-form-row">
           <Input
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search location..."
+            placeholder="Search city location..."
             onKeyPress={handleKeyPress}
-            className="flex-input-grow"
+            className="search-input-field"
           />
-          <Button onClick={handleSearch}>
-             Search
+          <Button onClick={handleSearch} className="search-action-btn">
+            Search
           </Button>
         </div>
       </div>
 
       {currentWeather && (
-        <div className="dashboard-data-presentation-wrapper">
+        <div className="weather-dashboard-layout-stack">
           <WeatherDisplay
             weather={currentWeather}
             unit={settings?.unit || 'celsius'}
@@ -161,35 +233,31 @@ const Home: React.FC = () => {
             onToggleFavorite={toggleFavorite}
           />
 
+          {/* Timeline Selection View Option Switches Tabs */}
           {forecast && (
-            <div className="dashboard-forecast-filter-row">
+            <div className="forecast-tab-controls-row">
               <Button
                 variant={viewType === 'hourly' ? 'primary' : 'secondary'}
                 onClick={() => setViewType('hourly')}
               >
-                 Hourly Overview
+                Hourly Timeline
               </Button>
               <Button
                 variant={viewType === 'daily' ? 'primary' : 'secondary'}
                 onClick={() => setViewType('daily')}
               >
-                 7-Day Forecast
+                Daily Timeline
               </Button>
             </div>
           )}
 
+          {/* Conditional View Panel rendering */}
           {forecast && (
-            <div className="dashboard-forecast-render-node">
+            <div className="forecast-view-panel-node">
               {viewType === 'hourly' ? (
-                <HourlyForecast
-                  forecasts={forecast.hourly}
-                  unit={settings?.unit === 'celsius' ? 'C' : 'F'}
-                />
+                <HourlyForecast forecasts={forecast.hourly} unit='C'/>
               ) : (
-                <DailyForecast
-                  forecasts={forecast.daily}
-                  unit={settings?.unit === 'celsius' ? 'C' : 'F'}
-                />
+                <DailyForecast forecasts={forecast.daily} unit='C'/>
               )}
             </div>
           )}

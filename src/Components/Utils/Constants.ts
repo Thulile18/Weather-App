@@ -1,6 +1,6 @@
 export const API_CONFIG = {
   BASE_URL: 'https://api.openweathermap.org/data/2.5',
-  API_KEY: 'YOUR_API_KEY_HERE', 
+  API_KEY: '8bb16bb5510615456144f052661fbf80', 
   UNITS: 'metric'
 };
 
@@ -17,9 +17,9 @@ export const WEATHER_ICONS = {
 };
 
 export const STORAGE_KEYS = {
-  WEATHER_DATA: 'weather_data',
-  USER_SETTINGS: 'user_settings'
-};
+  SAVED_LOCATIONS: 'weather_saved_locations', 
+  USER_SETTINGS: 'weather_user_settings'
+}
 
 export const CACHE_DURATION = 600000; 
 

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Button from '../Button';
+import Sidebar from './Sidebar';
+import './Header.css'; 
 
 interface HeaderProps {
   theme: 'light' | 'dark';
@@ -9,38 +11,54 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ theme, onToggleTheme }) => {
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <header className="app-global-navigation-header">
-      <div className="navigation-inner-container">
-        
-        <Link to="/" className="navigation-brand-logo-link">
-            Weather App
-        </Link>
-
-        <div className="navigation-actions-row-alignment">
-          <Link 
-            to="/favorites" 
-            className={`navigation-menu-item-link ${
-              location.pathname === '/favorites' ? 'state-active-route' : ''
-            }`}
-          >
-              Favorites
-          </Link>
+    <>
+      <header className="app-main-header">
+        <div className="header-container-inner">
           
-          <Button 
-            onClick={onToggleTheme} 
-            variant="secondary" 
-            size="sm"
+          <button 
+            onClick={() => setSidebarOpen(true)}
+            className="hamburger-menu-btn"
+            aria-label="Open navigation menu"
           >
-            {theme === 'light' ? ' Switch Dark' : ' Switch Light'}
-          </Button>
-        </div>
+            
+          </button>
 
-      </div>
-    </header>
+          <Link to="/" className="header-brand-logo-link">
+            Weather Portal
+          </Link>
+
+          <div className="header-navigation-controls">
+            <Link 
+              to="/favourites" 
+              className={`header-action-nav-link ${location.pathname === '/favourites' ? 'active-tab' : ''}`}
+            >
+              Favourites
+            </Link>
+            
+            <Link 
+              to="/settings" 
+              className={`header-action-nav-link settings-icon-tab ${location.pathname === '/settings' ? 'active-tab' : ''}`}
+            >
+              Settings
+            </Link>
+            
+            <Button 
+              onClick={onToggleTheme} 
+              variant="secondary" 
+              size="sm"
+            >
+              {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    </>
   );
 };
-
 
 export default Header;

@@ -1,0 +1,95 @@
+.settings-page {
+  padding-top: 30px;
+  padding-bottom: 50px;
+}
+
+.settings-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 25px;
+  border-bottom: 2px solid var(--border-ui);
+  padding-bottom: 10px;
+}
+
+.settings-stack {
+  max-width: 650px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px; 
+}
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.settings-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-label {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.settings-subtext {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.settings-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.5;
+}
+
+.location-badges-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.location-badge {
+  font-size: 0.75rem;
+  background-color: var(--border-ui);
+  color: var(--text-main);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.danger-zone-card {
+  border: 2px solid #ffccc7 !important;
+  background-color: rgba(255, 77, 79, 0.05) !important;
+}
+
+.danger-text {
+  color: #ff4d4f;
+}
+
+.back-button-container {
+  text-align: center;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .settings-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-title {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+}
