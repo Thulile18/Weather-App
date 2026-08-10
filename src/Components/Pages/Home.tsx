@@ -9,8 +9,8 @@ import WeatherAlert from '../../Weather/WeatherAlert';
 import Button from '../Button';
 import Input from '../Input';
 import type { WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
-import { NotificationService } from '../Utils/Notifications';
-
+import { NotificationService } from '../Utils/// @ts-ignore
+import './Home.css';
 // Force compiler to ignore side-effect CSS imports globally from this view
 // @ts-ignore
 import '../../App.css';
