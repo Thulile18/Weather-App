@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-// Bypasses local compiler CSS side-effect checks cleanly
+// Bypasses the strict local CSS declarations during compilation
 // @ts-ignore
 import './Home.css';
 // @ts-ignore
@@ -40,7 +40,6 @@ const Home: React.FC = () => {
 
   // --- COMPONENT LIFECYCLE INITIALIZATION ---
   useEffect(() => {
-    // Automatically trigger native browser geolocation directly inside Home to prevent hook crashes
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         () => {
@@ -69,11 +68,10 @@ const Home: React.FC = () => {
         setDisplayUnit(savedUnit as 'C' | 'F');
       }
     } catch (storageError) {
-      console.error('LocalStorage persistence read layer execution failure:', storageError);
+      console.error('LocalStorage persistence read execution failure:', storageError);
     }
   }, []);
 
-  // --- DYNAMIC NOTIFICATION TIMEOUTS ---
   const triggerNotificationMessage = (messageText: string) => {
     setProcessNotification(messageText);
     setTimeout(() => {
@@ -147,7 +145,7 @@ const Home: React.FC = () => {
     }, 300);
   };
 
-  // --- DYNAMIC DATA STRUCTURING SETS ---
+  // --- DATA COLLECTION OBJECTS ---
   const hourlyDataset: HourlyForecastNode[] = [
     { time: '09:00 AM', tempC: 19, tempF: 66, condition: 'Clear', emoji: '☀️' },
     { time: '12:00 PM', tempC: 24, tempF: 75, condition: 'Scattered Clouds', emoji: '⛅' },
@@ -166,47 +164,28 @@ const Home: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="status-container-centered" style={{ background: appTheme === 'dark' ? '#121824' : '#f5f7fa' }}>
+      <div className="status-container-centered">
         <div className="status-content">
-          <div className="status-icon loading-animation" style={{ color: appTheme === 'dark' ? '#fff' : '#1a2a3a' }}>⏳</div>
-          <p className="status-text" style={{ color: appTheme === 'dark' ? '#a0aec0' : '#8899aa' }}>Updating atmospheric metrics...</p>
+          <div className="status-icon loading-animation">⏳</div>
+          <p className="status-text">Updating atmospheric metrics...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div 
-      className={`main-page-wrapper theme-${appTheme}`} 
-      style={{ 
-        background: appTheme === 'dark' ? '#121824' : '#f5f7fa',
-        color: appTheme === 'dark' ? '#f7fafc' : '#1a2a3a',
-        transition: 'background 0.3s, color 0.3s',
-        minHeight: '100vh',
-        padding: '20px'
-      }}
-    >
+    <div className="main-page-wrapper">
+      
       {/* PROCESS NOTIFICATION BOX */}
       {processNotification && (
-        <div 
-          className="permission-alert-banner" 
-          style={{ 
-            background: appTheme === 'dark' ? '#2d3748' : '#e8f0fe', 
-            color: appTheme === 'dark' ? '#63b3ed' : '#1a3a5c',
-            fontWeight: 500,
-            marginBottom: '16px',
-            padding: '12px',
-            borderRadius: '12px',
-            textAlign: 'center'
-          }}
-        >
+        <div className="permission-alert-banner">
            {processNotification}
         </div>
       )}
 
       {/* SEARCH BAR INPUT GROUP */}
       <div className="search-section-box">
-        <form onSubmit={handleSearchSubmit} className="search-input-group" style={{ background: appTheme === 'dark' ? '#1a202c' : '#fff' }}>
+        <form onSubmit={handleSearchSubmit} className="search-input-group">
           <input
             type="text"
             value={searchQuery}
@@ -214,32 +193,83 @@ const Home: React.FC = () => {
             placeholder="Search city..."
             onKeyDown={handleKeyPress}
             className="city-search-input"
-            style={{ color: appTheme === 'dark' ? '#fff' : '#1a2a3a', background: 'transparent', border: 'none', width: '100%', outline: 'none' }}
           />
-          <button type="submit" className="search-submit-button" style={{ background: '#2c3e50', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '12px', cursor: 'pointer' }}>
+          <button type="submit" className="search-submit-button">
             Search
           </button>
         </form>
       </div>
 
       {/* MAIN WEATHER CARD DISPLAY */}
-      <div className="weather-card-container" style={{ background: appTheme === 'dark' ? '#1a202c' : '#fff', padding: '20px', borderRadius: '24px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="weather-card-container">
+        <div className="weather-card-header">
           <div>
-            <h2 className="location-title" style={{ color: appTheme === 'dark' ? '#fff' : '#1a2a3a' }}>{currentCity}</h2>
-            <p className="condition-subtitle" style={{ color: '#8899aa' }}>Scattered Clouds</p>
+            <h2 className="location-title">{currentCity}</h2>
+            <p className="condition-subtitle">Scattered Clouds</p>
           </div>
-          <span className="weather-visual-emoji" style={{ fontSize: '48px' }}>⛅</span>
+          <span className="weather-visual-emoji">⛅</span>
         </div>
 
-        <div className="weather-card-body" style={{ margin: '24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div className="temperature-text" style={{ color: appTheme === 'dark' ? '#fff' : '#1a2a3a', fontSize: '48px', fontWeight: 300 }}>
+        <div className="weather-card-body">
+          <div className="temperature-text">
             {displayUnit === 'C' ? '22°C' : '72°F'}
           </div>
 
-          <div className="secondary-stats" style={{ background: appTheme === 'dark' ? '#2d3748' : '#f5f6f8', padding: '12px', borderRadius: '16px' }}>
-            <div className="stat-item-row" style={{ marginBottom: '8px', fontSize: '13px' }}>
-              <span className="stat-label" style={{ color: '#8899aa' }}>Humidity:</span>
-              <span className="stat-value" style={{ color: appTheme === 'dark' ? '#fff' : '#1a2a3a', fontWeight: 500 }}>64%</span>
+          <div className="secondary-stats">
+            <div className="stat-item-row">
+              <span className="stat-label">Humidity:</span>
+              <span className="stat-value">64%</span>
             </div>
-            <div className="stat-item-row" style={{ fontSize: '13px' }}>
+            <div className="stat-item-row">
+              <span className="stat-label">Wind Speed:</span>
+              <span className="stat-value">4.2 m/s</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="weather-card-footer">
+          <button type="button" onClick={handleUnitToggleAction} className="search-submit-button">
+            Unit: °{displayUnit}
+          </button>
+          <button type="button" onClick={handleThemeToggleAction} className="search-submit-button">
+            Theme: {appTheme.toUpperCase()}
+          </button>
+          <button type="button" onClick={handleFavoritesToggleAction} className="search-submit-button">
+            {favorites.includes(currentCity) ? '⭐ Saved' : '⭐ Save Location'}
+          </button>
+        </div>
+      </div>
+
+      {/* VIEW SELECTION TOGGLES */}
+      <div className="view-toggle-button-row">
+        <button
+          type="button"
+          className={viewType === 'hourly' ? 'primary' : ''}
+          onClick={() => setViewType('hourly')}
+        >
+          Hourly
+        </button>
+        <button
+          type="button"
+          className={viewType === 'daily' ? 'primary' : ''}
+          onClick={() => setViewType('daily')}
+        >
+          Daily
+        </button>
+      </div>
+
+      {/* FORECAST VIEW WRAPPER */}
+      <div className="forecast-results-container">
+        {viewType === 'hourly' ? (
+          <div className="forecast-card-wrapper">
+            <h3 className="forecast-section-title">Hourly Forecast</h3>
+            <div className="horizontal-scroll-viewport">
+              <div className="scroll-flex-track">
+                {hourlyDataset.map((node, idx) => (
+                  <div key={idx} className="forecast-column-node">
+                    <div className="node-time-header">{node.time}</div>
+                    <div className="node-icon-visual-box">{node.emoji}</div>
+                    <div className="node-temperature-readout">
+                      {displayUnit === 'C' ? `${node.tempC}°C` : `${node.tempF}°F`}
+                    </div>
+                    <div className="node-condition-label">{node.condition}</div>
