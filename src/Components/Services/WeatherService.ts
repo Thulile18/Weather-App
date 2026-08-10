@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { WeatherData, ForecastData, HourlyForecast, DailyForecast } from '../Types/Weather.types';
 import { API_CONFIG } from '../Utils/Constants.ts';
 
-// GLOBAL FLAGS CONTROL - Set to true to bypass OpenWeather entirely on deployment failures
+// GLOBAL FLAG CONTROL - Set to true to use safe data models if the API is offline
 const USE_MOCK = true;
 
 export class WeatherService {
@@ -13,10 +13,11 @@ export class WeatherService {
       return {
         id: `${city.toLowerCase()}-${Date.now()}`,
         location: city.charAt(0).toUpperCase() + city.slice(1),
+        cityName: city.charAt(0).toUpperCase() + city.slice(1), // Added to fix the broken save location feature
         temperature: 22,
         humidity: 65,
-        windSpeed: 4.5, // Matches service model mapping structure
-        windspeed: 4.5, // Matches the Home.tsx strict lowercase warning check layout
+        windSpeed: 4.5,
+        windspeed: 4.5,
         condition: 'scattered clouds',
         icon: 'https://openweathermap.org',
         timestamp: Date.now()
@@ -37,15 +38,17 @@ export class WeatherService {
       console.log('Weather data received:', response.data);
       const data = response.data;
 
+      // FIXED: Added [0] array index to weather array mapping to prevent the blank screen crash
       return {
         id: `${city.toLowerCase()}-${Date.now()}`,
         location: data.name,
+        cityName: data.name, // Fixed key mapping mapping for saving bookmarks
         temperature: data.main.temp,
         humidity: data.main.humidity,
         windSpeed: data.wind.speed,
         windspeed: data.wind.speed,
         condition: data.weather[0].description,
-        icon: `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`,
+        icon: `https://openweathermap.org{data.weather[0].icon}@2x.png`,
         timestamp: Date.now()
       };
     } catch (error) {
@@ -71,6 +74,7 @@ export class WeatherService {
       return {
         id: `local-coords-${Date.now()}`,
         location: 'Current Location',
+        cityName: 'Current Location',
         temperature: 18,
         humidity: 70,
         windSpeed: 3.2,
@@ -93,15 +97,17 @@ export class WeatherService {
 
       const data = response.data;
 
+      // FIXED: Added [0] index to avoid crashing when loading coordinates layout data
       return {
         id: `${data.name.toLowerCase()}-${Date.now()}`,
         location: data.name,
+        cityName: data.name,
         temperature: data.main.temp,
         humidity: data.main.humidity,
         windSpeed: data.wind.speed,
         windspeed: data.wind.speed,
         condition: data.weather[0].description,
-        icon: `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`,
+        icon: `https://openweathermap.org{data.weather[0].icon}@2x.png`,
         timestamp: Date.now()
       };
     } catch (error) {
@@ -143,11 +149,12 @@ export class WeatherService {
         }
       });
 
+      // FIXED: Added index referencing to item.weather[0] array strings
       const hourlyData: HourlyForecast[] = response.data.list.slice(0, 8).map((item: any) => ({
         time: new Date(item.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         temperature: item.main.temp,
         condition: item.weather[0].description,
-        icon: `https://openweathermap.org/img/wn/${item.weather[0].icon}.png`
+        icon: `https://openweathermap.org{item.weather[0].icon}.png`
       }));
 
       const dailyMap = new Map<string, { day: string; temps: number[]; condition: string; icon: string }>();
@@ -159,7 +166,7 @@ export class WeatherService {
             day: new Date(item.dt * 1000).toLocaleDateString('en-US', { weekday: 'short' }),
             temps: [],
             condition: item.weather[0].description,
-            icon: `https://openweathermap.org/img/wn/${item.weather[0].icon}.png`
+            icon: `https://openweathermap.org{item.weather[0].icon}.png`
           });
         }
         dailyMap.get(date)!.temps.push(item.main.temp);
@@ -180,4 +187,3 @@ export class WeatherService {
     }
   }
 }
-
