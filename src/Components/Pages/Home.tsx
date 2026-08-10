@@ -11,7 +11,6 @@ import Input from '../Input';
 import type { WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
 import { NotificationService } from '../Utils/Notifications';
 
-// Tell the compiler to ignore local CSS checking for the build to pass safely
 // @ts-ignore
 import './Home.css';
 // @ts-ignore
@@ -43,7 +42,7 @@ const Home: React.FC = () => {
 
   const { location: userLocation, loading: locationLoading } = useLocation();
   
-  // Clean helper variables for your rendering templates
+  // Helper variables for clean rendering templates
   const favorites = getFavoriteLocations();
   const currentUnit = settings?.unit || 'celsius';
 
@@ -70,7 +69,7 @@ const Home: React.FC = () => {
     if (!currentWeather) return;
 
     const newAlerts: WeatherAlertType[] = [];
-    const city = currentWeather.location;
+    const city = currentWeather.cityName || currentWeather.location;
 
     // Warning Check 1: Extreme Hot Temperature
     if (currentWeather.temperature > 35) {
@@ -133,7 +132,6 @@ const Home: React.FC = () => {
 
   // --- COMPONENT HANDLERS ---
 
-  // Dispatches text filtering search queries
   const handleSearch = () => {
     if (searchQuery.trim() !== '') {
       fetchWeather(searchQuery.trim());
@@ -141,14 +139,12 @@ const Home: React.FC = () => {
     }
   };
 
-  // Maps keyboard Enter key entry
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
   };
 
-  // Swaps metric indicators preferences settings
   const toggleUnit = () => {
     if (settings) {
       const newUnit = settings.unit === 'celsius' ? 'fahrenheit' : 'celsius';
@@ -156,19 +152,18 @@ const Home: React.FC = () => {
     }
   };
 
-  // Toggles active coordinates inside local saving arrays
   const toggleFavorite = () => {
     if (currentWeather) {
-      const isFavorite = favorites.includes(currentWeather.location);
+      const targetCity = currentWeather.cityName || currentWeather.location;
+      const isFavorite = favorites.includes(targetCity);
       if (isFavorite) {
-        removeLocation(currentWeather.location);
+        removeLocation(targetCity);
       } else {
-        saveLocation(currentWeather.location);
+        saveLocation(targetCity);
       }
     }
   };
 
-  // Removes a single alert block card index when clicked
   const dismissAlert = (index: number) => {
     setAlerts(alerts.filter((_, i) => i !== index));
   };
@@ -179,7 +174,7 @@ const Home: React.FC = () => {
       <div className="status-container-centered">
         <div className="status-content">
           <div className="status-icon loading-animation"></div>
-          <p className="status-text">Loading weather data...</p>
+          <p className="status-text"> Loading weather data...</p> 
         </div>
       </div>
     );
@@ -201,9 +196,9 @@ const Home: React.FC = () => {
   // --- GLOBAL LAYOUT DOM TREE ---
   return (
     <div className="main-page-wrapper">
-      {/* Alert banner block completely hidden from this area to wipe clean dead white layout spacing */}
+      {/* Alert banner hidden from this area to remove empty layout spacing layout gaps */}
 
-      {/* Render current weather warnings lists */}
+      {/* Render active warning messages list */}
       {alerts.length > 0 && (
         <div className="alerts-layout-list">
           {alerts.map((alert, index) => (
@@ -219,7 +214,6 @@ const Home: React.FC = () => {
       {/* Input panel section text box box group wrapper */}
       <div className="search-section-box">
         <div className="search-input-group">
-          {/* FIXED: Formatted the input's onChange directly to capture value properties safely */}
           <Input
             value={searchQuery}
             onChange={(e: any) => setSearchQuery(e.target ? e.target.value : e)}
@@ -236,12 +230,11 @@ const Home: React.FC = () => {
       {/* Core Meteorological Data Display Panels */}
       {currentWeather && (
         <div className="dashboard-content-stack">
-          {/* FIXED: Passed currentWeather directly into the expected weather attribute tag */}
           <WeatherDisplay
             weather={currentWeather}
             unit={currentUnit}
             onToggleUnit={toggleUnit}
-            isFavorite={favorites.includes(currentWeather.location)}
+            isFavorite={favorites.includes(currentWeather.cityName || currentWeather.location)}
             onToggleFavorite={toggleFavorite}
           />
 
