@@ -1,1 +1,99 @@
+.main-page-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  font-family: sans-serif;
+}
+
+.status-container-centered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+}
+
+.status-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.loading-animation {
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.permission-alert-banner {
+  max-width: 28rem;
+  margin: 0 auto 1rem auto;
+  padding: 0.75rem;
+  background-color: #fef9c3;
+  border: 1px solid #facc15;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #854d0e;
+}
+
+.settings-redirect-link {
+  margin-left: 0.5rem;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.settings-redirect-link:hover {
+  text-decoration: underline;
+}
+
+.alerts-layout-list {
+  max-width: 28rem;
+  margin: 0 auto 1.5rem auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.search-section-box {
+  max-width: 28rem;
+  margin: 0 auto 2rem auto;
+}
+
+.search-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (min-width: 480px) {
+  .search-input-group {
+    flex-direction: row;
+  }
+}
+
+.city-search-input {
+  flex: 1;
+}
+
+.search-submit-button {
+  white-space: nowrap;
+}
+
+.dashboard-content-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.view-toggle-button-row {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.forecast-timeline-panel {
+  margin-top: 1rem;
+}
 
