@@ -73,8 +73,8 @@ const Home: React.FC = () => {
       NotificationService.sendWeatherAlert(city, 'Extreme heat detected! Stay hydrated.', 'warning');
     }
     
-    // Check 2: Windy Gale Weather
-    if (currentWeather.windSpeed > 15) {
+    // Check 2: Windy Gale Weather (Fixed property casing: windspeed)
+    if (currentWeather.windspeed > 15) {
       newAlerts.push({
         type: 'Wind Advisory',
         severity: 'watch',
@@ -121,7 +121,7 @@ const Home: React.FC = () => {
     setAlerts(newAlerts);
     
     // Target dependencies specifically to prevent endless execution loops
-  }, [currentWeather?.location, currentWeather?.temperature, currentWeather?.windSpeed, currentWeather?.condition]);
+  }, [currentWeather?.location, currentWeather?.temperature, currentWeather?.windspeed, currentWeather?.condition]);
 
   // --- COMPONENT HANDLERS ---
   const handleSearch = () => {
