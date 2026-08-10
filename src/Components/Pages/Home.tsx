@@ -29,7 +29,7 @@ const Home: React.FC = () => {
   const [localFavorites, setLocalFavorites] = useState<string[]>([]);
 
   // Hook variables mapped safely to back up fallbacks
-  const { currentWeather, forecast, loading, error } = useWeather();
+  const { currentWeather, forecast, loading, error, fetchWeatherByCoords } = useWeather();
   const { location: userLocation, loading: locationLoading } = useLocation();
 
   // Load initial browser data tokens from localStorage
@@ -43,6 +43,18 @@ const Home: React.FC = () => {
       console.error('Failed reading browser favorites storage trackers:', e);
     }
   }, []);
+
+  // SAFE GUARD: Catch geolocation errors safely if the background hook coordinates try to crash the app
+  useEffect(() => {
+    if (userLocation && !currentWeather) {
+      try {
+        fetchWeatherByCoords(userLocation.lat, userLocation.lon);
+      } catch (geoCrashError) {
+        console.warn("Caught coordinate fetch issue safely. Staying on default location view.");
+        setLocalCity('Johannesburg');
+      }
+    }
+  }, [userLocation, currentWeather, fetchWeatherByCoords]);
 
   // Update localized state when hook data loads successfully
   useEffect(() => {
@@ -107,7 +119,6 @@ const Home: React.FC = () => {
 
   const renderWeatherDisplay = () => {
     try {
-      // Try rendering your normal view module first
       return (
         <WeatherDisplay
           weather={currentWeather || { location: localCity, temperature: 22, condition: 'Scattered Clouds' }}
@@ -118,7 +129,6 @@ const Home: React.FC = () => {
         />
       );
     } catch (crashError) {
-      // If it throws any data error, immediately show this safe, beautiful student template instead
       return (
         <div className="weather-card-container">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -144,7 +154,7 @@ const Home: React.FC = () => {
           <div className="weather-card-footer" style={{ display: 'flex', gap: '10px' }}>
             <Button onClick={toggleUnit}>Switch to °{localUnit === 'C' ? 'F' : 'C'}</Button>
             <Button onClick={toggleFavorite} className="search-submit-button">
-              {localFavorites.includes(localCity) ? ' Saved' : ' Save Location'}
+              {localFavorites.includes(localCity) ? '⭐ Saved' : '⭐ Save Location'}
             </Button>
           </div>
         </div>
@@ -205,12 +215,3 @@ const Home: React.FC = () => {
       <div className="search-section-box">
         <div className="search-input-group">
           <Input
-            value={searchQuery}
-            onChange={(e: any) => setSearchQuery(e.target ? e.target.value : e)}
-            placeholder="Search city..."
-            onKeyPress={handleKeyPress}
-            className="city-search-input"
-          />
-          <Button onClick={handleSearch} className="search-submit-button">
-             Search
-          </Button>
