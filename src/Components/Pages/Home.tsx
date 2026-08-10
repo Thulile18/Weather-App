@@ -9,22 +9,24 @@ import WeatherAlert from '../../Weather/WeatherAlert';
 import Button from '../Button';
 import Input from '../Input';
 import type { WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
-import { NotificationService } from '../Utils/// @ts-ignore
+import { NotificationService } from '../Utils/Notifications';
+
+// Bypasses the strict local CSS declarations during compilation
+// @ts-ignore
 import './Home.css';
-// Force compiler to ignore side-effect CSS imports globally from this view
 // @ts-ignore
 import '../../App.css';
 // @ts-ignore
 import '../Layout/Header.css';
 
 const Home: React.FC = () => {
-  // --- STATE VARIABLES ---
+  // --- APPLICATION STATE VARIABLES ---
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewType, setViewType] = useState<'hourly' | 'daily'>('hourly');
   const [alerts, setAlerts] = useState<WeatherAlertType[]>([]);
   const [notificationPermission, setNotificationPermission] = useState<boolean>(false);
   
-  // --- WEATHER HOOK DATA ---
+  // --- APIS AND WEATHER CUSTOM HOOKS ---
   const {
     currentWeather,
     forecast,
@@ -41,13 +43,13 @@ const Home: React.FC = () => {
 
   const { location: userLocation, loading: locationLoading } = useLocation();
   
-  // Helper variables for clean template code
+  // General helper variables for clean rendering logic
   const favorites = getFavoriteLocations();
-  
-  // FIXED: Returned to your original string structure to solve line 242 error
   const currentUnit = settings?.unit || 'celsius';
 
-  // --- EFFECT 1: Ask for browser notification permissions ---
+  // --- RECURRING APPS EFFECTS ---
+
+  // Effect 1: Ask user for normal web notification permissions
   useEffect(() => {
     const checkPermission = async () => {
       const granted = await NotificationService.requestPermission();
@@ -56,21 +58,21 @@ const Home: React.FC = () => {
     checkPermission();
   }, []);
 
-  // --- EFFECT 2: Locate user automatically on startup ---
+  // Effect 2: Run automatic browser positioning coordinate search on load
   useEffect(() => {
     if (userLocation && !currentWeather) {
       fetchWeatherByCoords(userLocation.lat, userLocation.lon);
     }
   }, [userLocation, currentWeather, fetchWeatherByCoords]);
 
-  // --- EFFECT 3: Look out for dangerous weather scenarios ---
+  // Effect 3: Track weather conditions to generate extreme notifications
   useEffect(() => {
     if (!currentWeather) return;
 
     const newAlerts: WeatherAlertType[] = [];
-    const city = currentWeather.location;
+    const city = currentWeather.cityName || currentWeather.location;
 
-    // Check 1: Extreme Hot Temperature
+    // Condition 1: High Extreme Heat Warning
     if (currentWeather.temperature > 35) {
       newAlerts.push({
         type: 'Heat Warning',
@@ -81,7 +83,7 @@ const Home: React.FC = () => {
       NotificationService.sendWeatherAlert(city, 'Extreme heat detected! Stay hydrated.', 'warning');
     }
     
-    // Check 2: Windy Gale Weather (Fixed property casing: windspeed)
+    // Condition 2: Strong Wind advisory 
     if (currentWeather.windspeed > 15) {
       newAlerts.push({
         type: 'Wind Advisory',
@@ -92,7 +94,7 @@ const Home: React.FC = () => {
       NotificationService.sendWeatherAlert(city, 'High winds expected! Secure outdoor objects.', 'watch');
     }
 
-    // Check 3: Frost and Ice Conditions
+    // Condition 3: Subzero Freezing Temperatures
     if (currentWeather.temperature < 0) {
       newAlerts.push({
         type: 'Freeze Warning',
@@ -103,8 +105,8 @@ const Home: React.FC = () => {
       NotificationService.sendWeatherAlert(city, 'Freezing temperatures! Protect plants and pipes.', 'warning');
     }
 
-    // Check 4: Hot Storms
-    const conditionText = currentWeather.condition.toLowerCase();
+    // Condition 4: Dangerous Rainy Hot Storms
+    const conditionText = currentWeather.condition ? currentWeather.condition.toLowerCase() : '';
     if (conditionText.includes('rain') && currentWeather.temperature > 30) {
       newAlerts.push({
         type: 'Storm Alert',
@@ -115,7 +117,7 @@ const Home: React.FC = () => {
       NotificationService.sendWeatherAlert(city, 'Rain with high temperatures. Be prepared.', 'watch');
     }
 
-    // Check 5: Dense Fog
+    // Condition 5: Heavy Dense Fog Low Visibility
     if (conditionText.includes('fog')) {
       newAlerts.push({
         type: 'Fog Advisory',
@@ -127,11 +129,11 @@ const Home: React.FC = () => {
     }
 
     setAlerts(newAlerts);
-    
-    // Target dependencies specifically to prevent endless execution loops
-  }, [currentWeather?.location, currentWeather?.temperature, currentWeather?.windspeed, currentWeather?.condition]);
+  }, [currentWeather]);
 
-  // --- COMPONENT HANDLERS ---
+  // --- ACTIONS HANDLERS ---
+
+  // Triggered when searching for a town or city
   const handleSearch = () => {
     if (searchQuery.trim()) {
       fetchWeather(searchQuery.trim());
@@ -139,12 +141,14 @@ const Home: React.FC = () => {
     }
   };
 
+  // Allows searching by pressing the keyboard Enter key
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
   };
 
+  // Swaps global state preferences metrics units
   const toggleUnit = () => {
     if (settings) {
       const newUnit = settings.unit === 'celsius' ? 'fahrenheit' : 'celsius';
@@ -152,22 +156,27 @@ const Home: React.FC = () => {
     }
   };
 
+  // Adds or removes specific coordinates from bookmark lists
   const toggleFavorite = () => {
     if (currentWeather) {
-      const isFavorite = favorites.includes(currentWeather.location);
+      const targetCity = currentWeather.cityName || currentWeather.location;
+      const isFavorite = favorites.includes(targetCity);
       if (isFavorite) {
-        removeLocation(currentWeather.location);
+        removeLocation(targetCity);
       } else {
-        saveLocation(currentWeather.location);
+        saveLocation(targetCity);
       }
     }
   };
 
+  // Clears a specific danger card message array index node
   const dismissAlert = (index: number) => {
-    setAlerts(alerts.filter((_, i) => i !== index));
+    const updatedAlerts = alerts.filter((_, i) => i !== index);
+    setAlerts(updatedAlerts);
   };
 
-  // --- APP LOADING STATE ---
+  // --- INTERFACE INTERRUPT LAYERS ---
+
   if (loading || locationLoading) {
     return (
       <div className="status-container-centered">
@@ -179,7 +188,6 @@ const Home: React.FC = () => {
     );
   }
 
-  // --- APP ERROR STATE ---
   if (error) {
     return (
       <div className="status-container-centered">
@@ -192,20 +200,12 @@ const Home: React.FC = () => {
     );
   }
 
-  // --- FINAL RENDER TEMPLATE ---
+  // --- RENDER RETURN DOM TREE ---
   return (
     <div className="main-page-wrapper">
-      {/* System Notification Setup Flag */}
-      {!notificationPermission && (
-        <div className="permission-alert-banner">
-           Enable notifications in Settings to receive weather alerts.
-          <Link to="/settings" className="settings-redirect-link">
-            Go to Settings →
-          </Link>
-        </div>
-      )}
+      {/* Note: The 'Go to Settings' banner has been completely removed to clear out layout blanks */}
 
-      {/* Extreme Weather Alerts Dashboard */}
+      {/* Render active warning messages */}
       {alerts.length > 0 && (
         <div className="alerts-layout-list">
           {alerts.map((alert, index) => (
@@ -218,12 +218,12 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      {/* Input Search Controls Layout */}
+      {/* Search text box group row panel */}
       <div className="search-section-box">
         <div className="search-input-group">
           <Input
             value={searchQuery}
-            onChange={setSearchQuery}
+            onChange={(e: any) => setSearchQuery(e.target ? e.target.value : e)}
             placeholder="Search city..."
             onKeyPress={handleKeyPress}
             className="city-search-input"
@@ -234,18 +234,18 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Meteorological Data Presentation Area */}
+      {/* Main Meteorological weather status widgets cards */}
       {currentWeather && (
         <div className="dashboard-content-stack">
           <WeatherDisplay
             weather={currentWeather}
             unit={currentUnit}
             onToggleUnit={toggleUnit}
-            isFavorite={favorites.includes(currentWeather.location)}
+            isFavorite={favorites.includes(currentWeather.cityName || currentWeather.location)}
             onToggleFavorite={toggleFavorite}
           />
 
-          {/* Forecast Switch Controls Row */}
+          {/* Forecast layout segment control toggles row button view */}
           {forecast && (
             <div className="view-toggle-button-row">
               <Button
@@ -263,18 +263,18 @@ const Home: React.FC = () => {
             </div>
           )}
 
-          {/* Forecast Data Breakdown Cards */}
+          {/* Conditional sub components rendering */}
           {forecast && (
             <div className="forecast-results-container">
               {viewType === 'hourly' ? (
-                /* FIXED: Added 'as any' to avoid property mismatch errors TS271 */
                 <HourlyForecast 
-                  {...({ data: forecast.hourly || [], unit: currentUnit } as any)} 
+                  weather={currentWeather} 
+                  unit={currentUnit} 
                 />
               ) : (
-                /* FIXED: Added 'as any' to avoid property mismatch errors TS276 */
                 <DailyForecast 
-                  {...({ data: forecast.daily || [], unit: currentUnit } as any)} 
+                  weather={currentWeather} 
+                  unit={currentUnit} 
                 />
               )}
             </div>
