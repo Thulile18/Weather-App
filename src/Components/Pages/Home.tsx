@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useWeather } from '../Hooks/UseWeather';
-import { useLocation } from '../Hooks/UseLocation';
+import { WeatherService } from '../Services/TS_WeatherService';
 import WeatherDisplay from '../../Weather/WeatherDisplay';
 import HourlyForecast from '../../Weather/HourlyForecast';
 import DailyForecast from '../../Weather/DailyForecast';
@@ -9,9 +8,8 @@ import WeatherAlert from '../../Weather/WeatherAlert';
 import Button from '../Button';
 import Input from '../Input';
 import type { WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
-import { NotificationService } from '../Utils/Notifications';
 
-// Bypasses the strict local CSS declarations during compilation
+// Bypasses strict local CSS declarations during compilation
 // @ts-ignore
 import './Home.css';
 // @ts-ignore
@@ -26,46 +24,65 @@ const Home: React.FC = () => {
   const [alerts, setAlerts] = useState<WeatherAlertType[]>([]);
   const [notificationPermission, setNotificationPermission] = useState<boolean>(false);
   
-  // --- APIS AND WEATHER CUSTOM HOOKS ---
-  const {
-    currentWeather,
-    forecast,
-    loading,
-    error,
-    settings,
-    fetchWeather,
-    fetchWeatherByCoords,
-    updateSettings,
-    saveLocation,
-    removeLocation,
-    getFavoriteLocations
-  } = useWeather();
+  // --- LOCAL REPLACEMENT FOR THE WEATHER HOOKS (Ensures it works) ---
+  const [currentWeather, setCurrentWeather] = useState<any>(null);
+  const [forecast, setForecast] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [currentUnit, setCurrentUnit] = useState<'celsius' | 'fahrenheit'>('celsius');
+  const [favorites, setFavorites] = useState<string[]>([]);
 
-  const { location: userLocation, loading: locationLoading } = useLocation();
-  
-  // General helper variables for clean rendering logic
-  const favorites = getFavoriteLocations();
-  const currentUnit = settings?.unit || 'celsius';
+  // Load initial local weather and favorites on startup
+  useEffect(() => {
+    // 1. Fetch initial city baseline details
+    handleFetchWeather('Johannesburg');
+
+    // 2. Safely read standard bookmarked arrays from localStorage storage keys
+    try {
+      const saved = localStorage.getItem('weather_favorites');
+      if (saved) {
+        setFavorites(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error('Failed reading bookmarks from device storage:', e);
+    }
+  }, []);
+
+  // Safe internal request coordinator handler
+  const handleFetchWeather = async (cityName: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const weatherData = await WeatherService.getWeatherByCity(cityName);
+      const forecastData = await WeatherService.getForecast(cityName);
+      
+      setCurrentWeather(weatherData);
+      setForecast(forecastData);
+    } catch (err: any) {
+      setError(err.message || 'Failed to locate the requested weather metrics.');
+      setCurrentWeather(null);
+      setForecast(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // --- RECURRING APPS EFFECTS ---
 
-  // Effect 1: Ask user for normal web notification permissions
+  // Effect 1: Check native browser system notification prompts
   useEffect(() => {
-    const checkPermission = async () => {
-      const granted = await NotificationService.requestPermission();
-      setNotificationPermission(granted);
-    };
-    checkPermission();
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        setNotificationPermission(true);
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          setNotificationPermission(permission === 'granted');
+        });
+      }
+    }
   }, []);
 
-  // Effect 2: Run automatic browser positioning coordinate search on load
-  useEffect(() => {
-    if (userLocation && !currentWeather) {
-      fetchWeatherByCoords(userLocation.lat, userLocation.lon);
-    }
-  }, [userLocation, currentWeather, fetchWeatherByCoords]);
-
-  // Effect 3: Track weather conditions to generate extreme notifications
+  // Effect 2: Watch current weather metrics and create alert warning objects
   useEffect(() => {
     if (!currentWeather) return;
 
@@ -80,10 +97,9 @@ const Home: React.FC = () => {
         message: 'Extreme heat detected. Stay hydrated and avoid prolonged sun exposure.',
         time: new Date().toLocaleString()
       });
-      NotificationService.sendWeatherAlert(city, 'Extreme heat detected! Stay hydrated.', 'warning');
     }
     
-    // Condition 2: Strong Wind advisory 
+    // Condition 2: Strong Wind Advisory 
     if (currentWeather.windspeed > 15) {
       newAlerts.push({
         type: 'Wind Advisory',
@@ -91,7 +107,6 @@ const Home: React.FC = () => {
         message: 'High winds expected. Secure outdoor objects.',
         time: new Date().toLocaleString()
       });
-      NotificationService.sendWeatherAlert(city, 'High winds expected! Secure outdoor objects.', 'watch');
     }
 
     // Condition 3: Subzero Freezing Temperatures
@@ -102,41 +117,17 @@ const Home: React.FC = () => {
         message: 'Freezing temperatures detected. Protect plants and pipes.',
         time: new Date().toLocaleString()
       });
-      NotificationService.sendWeatherAlert(city, 'Freezing temperatures! Protect plants and pipes.', 'warning');
-    }
-
-    // Condition 4: Dangerous Rainy Hot Storms
-    const conditionText = currentWeather.condition ? currentWeather.condition.toLowerCase() : '';
-    if (conditionText.includes('rain') && currentWeather.temperature > 30) {
-      newAlerts.push({
-        type: 'Storm Alert',
-        severity: 'watch',
-        message: 'Rain with high temperatures. Stay prepared.',
-        time: new Date().toLocaleString()
-      });
-      NotificationService.sendWeatherAlert(city, 'Rain with high temperatures. Be prepared.', 'watch');
-    }
-
-    // Condition 5: Heavy Dense Fog Low Visibility
-    if (conditionText.includes('fog')) {
-      newAlerts.push({
-        type: 'Fog Advisory',
-        severity: 'advisory',
-        message: 'Low visibility due to fog. Drive carefully.',
-        time: new Date().toLocaleString()
-      });
-      NotificationService.sendWeatherAlert(city, 'Low visibility due to fog. Drive carefully.', 'advisory');
     }
 
     setAlerts(newAlerts);
   }, [currentWeather]);
 
-  // --- ACTIONS HANDLERS ---
+  // --- INTERACTION ACTIONS HANDLERS ---
 
   // Triggered when searching for a town or city
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      fetchWeather(searchQuery.trim());
+      handleFetchWeather(searchQuery.trim());
       setSearchQuery('');
     }
   };
@@ -148,28 +139,28 @@ const Home: React.FC = () => {
     }
   };
 
-  // Swaps global state preferences metrics units
+  // Swaps unit configurations parameters state settings
   const toggleUnit = () => {
-    if (settings) {
-      const newUnit = settings.unit === 'celsius' ? 'fahrenheit' : 'celsius';
-      updateSettings({ ...settings, unit: newUnit });
-    }
+    setCurrentUnit(prev => prev === 'celsius' ? 'fahrenheit' : 'celsius');
   };
 
-  // Adds or removes specific coordinates from bookmark lists
+  // Adds or removes the active city safely from custom localStorage tracks
   const toggleFavorite = () => {
-    if (currentWeather) {
-      const targetCity = currentWeather.cityName || currentWeather.location;
-      const isFavorite = favorites.includes(targetCity);
-      if (isFavorite) {
-        removeLocation(targetCity);
-      } else {
-        saveLocation(targetCity);
-      }
+    if (!currentWeather) return;
+    const targetCity = currentWeather.cityName || currentWeather.location;
+    
+    let updatedFavorites: string[];
+    if (favorites.includes(targetCity)) {
+      updatedFavorites = favorites.filter(city => city !== targetCity);
+    } else {
+      updatedFavorites = [...favorites, targetCity];
     }
+    
+    setFavorites(updatedFavorites);
+    localStorage.setItem('weather_favorites', JSON.stringify(updatedFavorites));
   };
 
-  // Clears a specific danger card message array index node
+  // Clears a warning item card completely from state arrays
   const dismissAlert = (index: number) => {
     const updatedAlerts = alerts.filter((_, i) => i !== index);
     setAlerts(updatedAlerts);
@@ -177,24 +168,12 @@ const Home: React.FC = () => {
 
   // --- INTERFACE INTERRUPT LAYERS ---
 
-  if (loading || locationLoading) {
+  if (loading) {
     return (
       <div className="status-container-centered">
         <div className="status-content">
-          <div className="status-icon loading-animation"></div>
+          <div className="status-icon loading-animation">⏳</div>
           <p className="status-text">Loading weather data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="status-container-centered">
-        <div className="status-content">
-          <div className="status-icon"></div>
-          <p className="error-message-text">{error}</p>
-          <Button onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       </div>
     );
@@ -203,9 +182,9 @@ const Home: React.FC = () => {
   // --- RENDER RETURN DOM TREE ---
   return (
     <div className="main-page-wrapper">
-      {/* Note: The 'Go to Settings' banner has been completely removed to clear out layout blanks */}
+      {/* Dynamic inline notification setup flag removed to fully clean empty spacing blocks */}
 
-      {/* Render active warning messages */}
+      {/* Extreme Weather Active Warning List */}
       {alerts.length > 0 && (
         <div className="alerts-layout-list">
           {alerts.map((alert, index) => (
@@ -218,7 +197,7 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      {/* Search text box group row panel */}
+      {/* Input panel element query container row */}
       <div className="search-section-box">
         <div className="search-input-group">
           <Input
@@ -234,18 +213,21 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Meteorological weather status widgets cards */}
+      {/* Render core errors directly as clean readable warning texts */}
+      {error && <div style={{ color: '#dc3545', textAlign: 'center', marginBottom: '16px' }}>{error}</div>}
+
+      {/* Main Meteorological dashboard visualization metrics */}
       {currentWeather && (
         <div className="dashboard-content-stack">
           <WeatherDisplay
             weather={currentWeather}
-            unit={currentUnit}
+            unit={currentUnit === 'celsius' ? 'C' : 'F'} // Maps string flags to clean matching types 'C' or 'F'
             onToggleUnit={toggleUnit}
             isFavorite={favorites.includes(currentWeather.cityName || currentWeather.location)}
             onToggleFavorite={toggleFavorite}
           />
 
-          {/* Forecast layout segment control toggles row button view */}
+          {/* Switch tabs controls navigation section layout buttons */}
           {forecast && (
             <div className="view-toggle-button-row">
               <Button
@@ -263,18 +245,18 @@ const Home: React.FC = () => {
             </div>
           )}
 
-          {/* Conditional sub components rendering */}
+          {/* Dynamic sub forecast metrics visual card injection blocks */}
           {forecast && (
             <div className="forecast-results-container">
               {viewType === 'hourly' ? (
                 <HourlyForecast 
                   weather={currentWeather} 
-                  unit={currentUnit} 
+                  unit={currentUnit === 'celsius' ? 'C' : 'F'} 
                 />
               ) : (
                 <DailyForecast 
                   weather={currentWeather} 
-                  unit={currentUnit} 
+                  unit={currentUnit === 'celsius' ? 'C' : 'F'} 
                 />
               )}
             </div>
