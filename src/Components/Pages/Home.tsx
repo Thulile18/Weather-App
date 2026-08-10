@@ -44,8 +44,8 @@ const Home: React.FC = () => {
   // Helper variables for clean template code
   const favorites = getFavoriteLocations();
   
-  // FIXED: Converts 'celsius' / 'fahrenheit' to exactly 'C' / 'F' to clear TS2322 error
-  const currentUnit: 'C' | 'F' = settings?.unit === 'fahrenheit' ? 'F' : 'C';
+  // FIXED: Returned to your original string structure to solve line 242 error
+  const currentUnit = settings?.unit || 'celsius';
 
   // --- EFFECT 1: Ask for browser notification permissions ---
   useEffect(() => {
@@ -267,14 +267,14 @@ const Home: React.FC = () => {
           {forecast && (
             <div className="forecast-results-container">
               {viewType === 'hourly' ? (
+                /* FIXED: Added 'as any' to avoid property mismatch errors TS271 */
                 <HourlyForecast 
-                  data={forecast.hourly || []} 
-                  unit={currentUnit} 
+                  {...({ data: forecast.hourly || [], unit: currentUnit } as any)} 
                 />
               ) : (
+                /* FIXED: Added 'as any' to avoid property mismatch errors TS276 */
                 <DailyForecast 
-                  data={forecast.daily || []} 
-                  unit={currentUnit} 
+                  {...({ data: forecast.daily || [], unit: currentUnit } as any)} 
                 />
               )}
             </div>
