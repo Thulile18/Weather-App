@@ -8,7 +8,7 @@ import DailyForecast from '../Weather/DailyForecast';
 import WeatherAlert from '../Weather/WeatherAlert';
 import Button from '../Button';
 import Input from '../Input';
-import { WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
+import type { WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
 import { NotificationService } from '../Utils/Notifications';
 
 const Home: React.FC = () => {
