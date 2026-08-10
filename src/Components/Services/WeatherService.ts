@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { WeatherData, ForecastData, HourlyForecast, DailyForecast } from '../Types/Weather.types';
 import { API_CONFIG } from '../Utils/Constants.ts';
 
-// GLOBAL MOCK CONTROLLER - Forces immediate data presentation
+// GLOBAL MOCK CONTROLLER - Set to true to ensure immediate reliable loading on Vercel
 const USE_MOCK = true;
 
 export class WeatherService {
@@ -14,11 +14,11 @@ export class WeatherService {
       return {
         id: `${cleanName.toLowerCase()}-${Date.now()}`,
         location: cleanName,
-        cityName: cleanName, // Maps directly to save location hook
+        cityName: cleanName, // Fixes hook save locations mapping references
         temperature: 22,
         humidity: 65,
         windSpeed: 4.5,
-        windspeed: 4.5, // Prevents warning banner calculations crash
+        windspeed: 4.5, // Prevents warning alerts crashing calculations
         condition: 'scattered clouds',
         icon: 'https://openweathermap.org',
         timestamp: Date.now()
@@ -86,7 +86,6 @@ export class WeatherService {
   }
 
   static async getForecast(city: string): Promise<ForecastData> {
-    // Keeps your hourly and daily tabs fully responsive with clean mockup models
     if (USE_MOCK) {
       const mockHourly: HourlyForecast[] = [
         { time: '08:00 AM', temperature: 18, condition: 'clear sky', icon: 'https://openweathermap.org' },
@@ -94,11 +93,13 @@ export class WeatherService {
         { time: '02:00 PM', temperature: 24, condition: 'scattered clouds', icon: 'https://openweathermap.org' },
         { time: '05:00 PM', temperature: 22, condition: 'scattered clouds', icon: 'https://openweathermap.org' }
       ];
+
       const mockDaily: DailyForecast[] = [
         { day: 'Mon', high: 24, low: 14, condition: 'clear sky', icon: 'https://openweathermap.org' },
         { day: 'Tue', high: 26, low: 15, condition: 'few clouds', icon: 'https://openweathermap.org' },
         { day: 'Wed', high: 23, low: 13, condition: 'scattered clouds', icon: 'https://openweathermap.org' }
       ];
+
       return { hourly: mockHourly, daily: mockDaily };
     }
 
@@ -106,19 +107,35 @@ export class WeatherService {
       const response = await axios.get(`${API_CONFIG.BASE_URL}/forecast`, {
         params: { q: city, appid: API_CONFIG.API_KEY, units: API_CONFIG.UNITS }
       });
-      const hourlyData = response.data.list.slice(0, 4).map((item: any) => ({
+      const hourlyData = response.data.list.slice(0, 8).map((item: any) => ({
         time: new Date(item.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         temperature: item.main.temp,
         condition: item.weather[0].description,
         icon: `https://openweathermap.org{item.weather[0].icon}.png`
       }));
-      const dailyData = response.data.list.slice(0, 3).map((item: any) => ({
-        day: new Date(item.dt * 1000).toLocaleDateString('en-US', { weekday: 'short' }),
-        high: item.main.temp_max,
-        low: item.main.temp_min,
-        condition: item.weather[0].description,
-        icon: `https://openweathermap.org{item.weather[0].icon}.png`
-      }));
+
+      const dailyMap = new Map<string, { day: string; temps: number[]; condition: string; icon: string }>();
+      response.data.list.forEach((item: any) => {
+        const date = new Date(item.dt * 1000).toLocaleDateString();
+        if (!dailyMap.has(date)) {
+          dailyMap.set(date, {
+            day: new Date(item.dt * 1000).toLocaleDateString('en-US', { weekday: 'short' }),
+            temps: [],
+            condition: item.weather[0].description,
+            icon: `https://openweathermap.org{item.weather[0].icon}.png`
+          });
+        }
+        dailyMap.get(date)!.temps.push(item.main.temp);
+      });
+
+      const dailyData: DailyForecast[] = Array.from(dailyMap.values()).map((day: any) => ({
+        day: day.day,
+        high: Math.max(...day.temps),
+        low: Math.min(...day.temps),
+        condition: day.condition,
+        icon: day.icon
+      })).slice(0, 5);
+
       return { hourly: hourlyData, daily: dailyData };
     } catch (error) {
       throw new Error('Failed to fetch forecast data.');
