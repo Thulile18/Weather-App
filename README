@@ -1,0 +1,59 @@
+# 🌤️ Weather App
+
+A simple React TypeScript weather application that displays real-time weather data, forecasts, and lets users save their favorite locations.
+
+## 🔗 Live Demo
+[https://weather-app-7phd.vercel.app](https://weather-app-7phd.vercel.app)
+
+## ✨ Features
+- Current weather view (Temperature, Wind Speed, and Conditions)
+- Interactive tabs to switch between Hourly and Daily forecasts
+- Search bar to look up any city or town
+- Save and bookmark favorite locations
+- Switch metrics easily between Celsius and Fahrenheit
+- Severe weather tracking alerts with browser push notifications
+- Full screen error handlers and loading animations
+- Fully responsive on mobile layouts
+
+## 🛠️ Tech Stack
+- React + TypeScript
+- Custom Vanilla CSS (Plain styles, no external CSS frameworks)
+- React Router v6
+- Axios
+- Vite
+
+## 📁 Project Structure
+src/
+├── Components/
+│   ├── Pages/          # Home view dashboard
+│   ├── Weather/        # WeatherDisplay, Forecast panels, and Alerts
+│   ├── Layout/         # Application Header
+│   ├── Settings/       # Simple user preferences screen
+│   ├── Button/         # Reusable global button component
+│   └── Input/          # Reusable text field component
+├── Hooks/              # useWeather and useLocation hooks
+├── Types/              # TypeScript types file
+├── Utils/              # Notifications background utility
+├── App.tsx             # Main router management
+└── main.tsx            # Application entrance layout
+
+## 🚀 Installation & Local Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/Thulile18/Weather-App.git
+
+# Enter the project directory
+cd Weather-App
+
+# Install student dependencies
+npm install
+
+# Start the local development server
+npm run dev
+```
+
+---
+👤 **Author:** Thulile18  
+📎 **Repository: [GitHub Link](https://github.com/Thulile18/Weather-App)  
+📎 **Live Build:** [Vercel Deployment](https://weather-app-7phd.vercel.app)
