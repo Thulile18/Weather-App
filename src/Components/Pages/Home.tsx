@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useWeather } from '../Hooks/UseWeather';
 import { useLocation } from '../Hooks/UseLocation';
-import WeatherDisplay from '../../Weather/WeatherDisplay';
-import DailyForecast from '../..//Weather/DailyForecast';
-import WeatherAlert from '../..//Weather/WeatherAlert';
+import WeatherDisplay from '../Weather/WeatherDisplay';
+import HourlyForecast from '../Weather/HourlyForecast';
+import DailyForecast from '../Weather/DailyForecast';
+import WeatherAlert from '../Weather/WeatherAlert';
 import Button from '../Button';
 import Input from '../Input';
-import { Link } from 'react-router-dom'; 
-import type{ WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
+import { WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
 import { NotificationService } from '../Utils/Notifications';
-import './Home.css'; 
-import HourlyForecast from '../../Weather/HourlyForecast';
 
 const Home: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  // --- STATE VARIABLES ---
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewType, setViewType] = useState<'hourly' | 'daily'>('hourly');
   const [alerts, setAlerts] = useState<WeatherAlertType[]>([]);
   const [notificationPermission, setNotificationPermission] = useState<boolean>(false);
   
+  // --- WEATHER HOOK DATA ---
   const {
     currentWeather,
     forecast,
@@ -33,8 +34,12 @@ const Home: React.FC = () => {
   } = useWeather();
 
   const { location: userLocation, loading: locationLoading } = useLocation();
+  
+  // Helper variables for clean template code
   const favorites = getFavoriteLocations();
+  const currentUnit = settings?.unit || 'celsius';
 
+  // --- EFFECT 1: Ask for browser notification permissions ---
   useEffect(() => {
     const checkPermission = async () => {
       const granted = await NotificationService.requestPermission();
@@ -43,90 +48,82 @@ const Home: React.FC = () => {
     checkPermission();
   }, []);
 
+  // --- EFFECT 2: Locate user automatically on startup ---
   useEffect(() => {
     if (userLocation && !currentWeather) {
       fetchWeatherByCoords(userLocation.lat, userLocation.lon);
     }
-  }, [userLocation]);
+  }, [userLocation, currentWeather, fetchWeatherByCoords]);
 
+  // --- EFFECT 3: Look out for dangerous weather scenarios ---
   useEffect(() => {
-    if (currentWeather) {
-      const newAlerts: WeatherAlertType[] = [];
-      
-      if (currentWeather.temperature > 35) {
-        newAlerts.push({
-          type: 'Heat Warning',
-          severity: 'warning',
-          message: 'Extreme heat detected. Stay hydrated and avoid prolonged sun exposure.',
-          time: new Date().toLocaleString()
-        });
-        NotificationService.sendWeatherAlert(
-          currentWeather.location,
-          'Extreme heat detected! Stay hydrated.',
-          'warning'
-        );
-      }
-      
-      if (currentWeather.windspeed > 15) { 
-        newAlerts.push({
-          type: 'Wind Advisory',
-          severity: 'watch',
-          message: 'High winds expected. Secure outdoor objects.',
-          time: new Date().toLocaleString()
-        });
-        NotificationService.sendWeatherAlert(
-          currentWeather.location,
-          'High winds expected! Secure outdoor objects.',
-          'watch'
-        );
-      }
+    if (!currentWeather) return;
 
-      if (currentWeather.temperature < 0) {
-        newAlerts.push({
-          type: 'Freeze Warning',
-          severity: 'warning',
-          message: 'Freezing temperatures detected. Protect plants and pipes.',
-          time: new Date().toLocaleString()
-        });
-        NotificationService.sendWeatherAlert(
-          currentWeather.location,
-          'Freezing temperatures! Protect plants and pipes.',
-          'warning'
-        );
-      }
+    const newAlerts: WeatherAlertType[] = [];
+    const city = currentWeather.location;
 
-      if (currentWeather.condition.toLowerCase().includes('rain') && currentWeather.temperature > 30) {
-        newAlerts.push({
-          type: 'Storm Alert',
-          severity: 'watch',
-          message: 'Rain with high temperatures. Stay prepared.',
-          time: new Date().toLocaleString()
-        });
-        NotificationService.sendWeatherAlert(
-          currentWeather.location,
-          'Rain with high temperatures. Be prepared.',
-          'watch'
-        );
-      }
-
-      if (currentWeather.condition.toLowerCase().includes('fog')) {
-        newAlerts.push({
-          type: 'Fog Advisory',
-          severity: 'advisory',
-          message: 'Low visibility due to fog. Drive carefully.',
-          time: new Date().toLocaleString()
-        });
-        NotificationService.sendWeatherAlert(
-          currentWeather.location,
-          'Low visibility due to fog. Drive carefully.',
-          'advisory'
-        );
-      }
-
-      setAlerts(newAlerts);
+    // Check 1: Extreme Hot Temperature
+    if (currentWeather.temperature > 35) {
+      newAlerts.push({
+        type: 'Heat Warning',
+        severity: 'warning',
+        message: 'Extreme heat detected. Stay hydrated and avoid prolonged sun exposure.',
+        time: new Date().toLocaleString()
+      });
+      NotificationService.sendWeatherAlert(city, 'Extreme heat detected! Stay hydrated.', 'warning');
     }
-  }, [currentWeather]);
+    
+    // Check 2: Windy Gale Weather
+    if (currentWeather.windSpeed > 15) {
+      newAlerts.push({
+        type: 'Wind Advisory',
+        severity: 'watch',
+        message: 'High winds expected. Secure outdoor objects.',
+        time: new Date().toLocaleString()
+      });
+      NotificationService.sendWeatherAlert(city, 'High winds expected! Secure outdoor objects.', 'watch');
+    }
 
+    // Check 3: Frost and Ice Conditions
+    if (currentWeather.temperature < 0) {
+      newAlerts.push({
+        type: 'Freeze Warning',
+        severity: 'warning',
+        message: 'Freezing temperatures detected. Protect plants and pipes.',
+        time: new Date().toLocaleString()
+      });
+      NotificationService.sendWeatherAlert(city, 'Freezing temperatures! Protect plants and pipes.', 'warning');
+    }
+
+    // Check 4: Hot Storms
+    const conditionText = currentWeather.condition.toLowerCase();
+    if (conditionText.includes('rain') && currentWeather.temperature > 30) {
+      newAlerts.push({
+        type: 'Storm Alert',
+        severity: 'watch',
+        message: 'Rain with high temperatures. Stay prepared.',
+        time: new Date().toLocaleString()
+      });
+      NotificationService.sendWeatherAlert(city, 'Rain with high temperatures. Be prepared.', 'watch');
+    }
+
+    // Check 5: Dense Fog
+    if (conditionText.includes('fog')) {
+      newAlerts.push({
+        type: 'Fog Advisory',
+        severity: 'advisory',
+        message: 'Low visibility due to fog. Drive carefully.',
+        time: new Date().toLocaleString()
+      });
+      NotificationService.sendWeatherAlert(city, 'Low visibility due to fog. Drive carefully.', 'advisory');
+    }
+
+    setAlerts(newAlerts);
+    
+    // Target dependencies specifically to prevent endless execution loops
+  }, [currentWeather?.location, currentWeather?.temperature, currentWeather?.windSpeed, currentWeather?.condition]);
+
+  // --- COMPONENT HANDLERS ---
   const handleSearch = () => {
     if (searchQuery.trim()) {
       fetchWeather(searchQuery.trim());
@@ -162,42 +159,47 @@ const Home: React.FC = () => {
     setAlerts(alerts.filter((_, i) => i !== index));
   };
 
+  // --- APP LOADING STATE ---
   if (loading || locationLoading) {
     return (
-      <div className="home-status-centered-canvas">
-        <div className="status-message-wrapper">
-          <div className="status-spinner-element"> Syncing </div>
-          <p className="status-caption"> Loading meteorological data... </p>
+      <div className="status-container-centered">
+        <div className="status-content">
+          <div className="status-icon loading-animation"></div>
+          <p className="status-text">Loading weather data...</p>
         </div>
       </div>
     );
   }
 
+  // --- APP ERROR STATE ---
   if (error) {
     return (
-      <div className="home-status-centered-canvas">
-        <div className="status-message-wrapper">
-          <div className="error-title-marker">Notice</div>
-          <p className="error-text-details">{error}</p>
-          <Button onClick={() => window.location.reload()}> Try Again </Button>
+      <div className="status-container-centered">
+        <div className="status-content">
+          <div className="status-icon"></div>
+          <p className="error-message-text">{error}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       </div>
     );
   }
 
+  // --- FINAL RENDER TEMPLATE ---
   return (
-    <div className="home-page-container">
+    <div className="main-page-wrapper">
+      {/* System Notification Setup Flag */}
       {!notificationPermission && (
-        <div className="notification-reminder-banner">
-          Attention: Enable notifications in system settings to receive push updates.
+        <div className="permission-alert-banner">
+           Enable notifications in Settings to receive weather alerts.
           <Link to="/settings" className="settings-redirect-link">
-            Open Settings →
+            Go to Settings →
           </Link>
         </div>
       )}
 
+      {/* Extreme Weather Alerts Dashboard */}
       {alerts.length > 0 && (
-        <div className="active-alerts-stack">
+        <div className="alerts-layout-list">
           {alerts.map((alert, index) => (
             <WeatherAlert
               key={index}
@@ -208,56 +210,58 @@ const Home: React.FC = () => {
         </div>
       )}
 
-      <div className="search-controls-wrapper">
-        <div className="search-form-row">
+      {/* Input Search Controls Layout */}
+      <div className="search-section-box">
+        <div className="search-input-group">
           <Input
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search city location..."
+            placeholder="Search city..."
             onKeyPress={handleKeyPress}
-            className="search-input-field"
+            className="city-search-input"
           />
-          <Button onClick={handleSearch} className="search-action-btn">
-            Search
+          <Button onClick={handleSearch} className="search-submit-button">
+             Search
           </Button>
         </div>
       </div>
 
+      {/* Meteorological Data Presentation Area */}
       {currentWeather && (
-        <div className="weather-dashboard-layout-stack">
+        <div className="dashboard-content-stack">
           <WeatherDisplay
             weather={currentWeather}
-            unit={settings?.unit || 'celsius'}
+            unit={currentUnit}
             onToggleUnit={toggleUnit}
             isFavorite={favorites.includes(currentWeather.location)}
             onToggleFavorite={toggleFavorite}
           />
 
-          {/* Timeline Selection View Option Switches Tabs */}
+          {/* Forecast Switch Controls Row */}
           {forecast && (
-            <div className="forecast-tab-controls-row">
+            <div className="view-toggle-button-row">
               <Button
                 variant={viewType === 'hourly' ? 'primary' : 'secondary'}
                 onClick={() => setViewType('hourly')}
               >
-                Hourly Timeline
+                 Hourly
               </Button>
               <Button
                 variant={viewType === 'daily' ? 'primary' : 'secondary'}
                 onClick={() => setViewType('daily')}
               >
-                Daily Timeline
+                 Daily
               </Button>
             </div>
           )}
 
-          {/* Conditional View Panel rendering */}
+          {/* Dynamic Forecast Metrics Timeline Rendering Container */}
           {forecast && (
-            <div className="forecast-view-panel-node">
+            <div className="forecast-timeline-panel">
               {viewType === 'hourly' ? (
-                <HourlyForecast forecasts={forecast.hourly} unit='C'/>
+                <HourlyForecast forecasts={forecast.hourly} unit={currentUnit} />
               ) : (
-                <DailyForecast forecasts={forecast.daily} unit='C'/>
+                <DailyForecast forecasts={forecast.daily} unit={currentUnit} />
               )}
             </div>
           )}
