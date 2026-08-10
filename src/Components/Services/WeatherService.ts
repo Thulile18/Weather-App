@@ -24,7 +24,7 @@ export class WeatherService {
         location: data.name,
         temperature: data.main.temp,
         humidity: data.main.humidity,
-        windspeed: data.wind.speed, 
+        windSpeed: data.wind.speed,
         condition: data.weather[0].description,
         icon: `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`,
         timestamp: Date.now()
@@ -65,7 +65,7 @@ export class WeatherService {
         location: data.name,
         temperature: data.main.temp,
         humidity: data.main.humidity,
-        windspeed: data.wind.speed, 
+        windSpeed: data.wind.speed,
         condition: data.weather[0].description,
         icon: `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`,
         timestamp: Date.now()
