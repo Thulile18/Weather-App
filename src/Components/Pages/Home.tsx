@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-// Bypasses the strict local CSS declarations during compilation
 // @ts-ignore
 import './Home.css';
 // @ts-ignore
@@ -8,7 +7,6 @@ import '../../App.css';
 // @ts-ignore
 import '../Layout/Header.css';
 
-// --- DATA STRUCTURE TYPES ---
 interface HourlyForecastNode {
   time: string;
   tempC: number;
@@ -28,7 +26,6 @@ interface DailyForecastNode {
 }
 
 const Home: React.FC = () => {
-  // --- CORE APPLICATION STATES ---
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewType, setViewType] = useState<'hourly' | 'daily'>('hourly');
   const [currentCity, setCurrentCity] = useState<string>('Johannesburg');
@@ -38,16 +35,14 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [processNotification, setProcessNotification] = useState<string | null>(null);
 
-  // --- COMPONENT LIFECYCLE INITIALIZATION ---
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         () => {
           setCurrentCity('Johannesburg (Local)');
-          triggerNotificationMessage('Location access granted. Displaying local area weather.');
+          triggerNotificationMessage('Location access granted.');
         },
         () => {
-          console.log('Location denied, using default city.');
           setCurrentCity('Johannesburg');
         },
         { timeout: 5000 }
@@ -56,151 +51,83 @@ const Home: React.FC = () => {
 
     try {
       const savedFavorites = localStorage.getItem('weather_favorites');
-      if (savedFavorites) {
-        setFavorites(JSON.parse(savedFavorites));
-      }
+      if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
       const savedTheme = localStorage.getItem('weather_theme');
-      if (savedTheme) {
-        setAppTheme(savedTheme as 'light' | 'dark');
-      }
+      if (savedTheme) setAppTheme(savedTheme as 'light' | 'dark');
       const savedUnit = localStorage.getItem('weather_unit');
-      if (savedUnit) {
-        setDisplayUnit(savedUnit as 'C' | 'F');
-      }
-    } catch (storageError) {
-      console.error('LocalStorage persistence read execution failure:', storageError);
+      if (savedUnit) setDisplayUnit(savedUnit as 'C' | 'F');
+    } catch (e) {
+      console.error(e);
     }
   }, []);
 
   const triggerNotificationMessage = (messageText: string) => {
     setProcessNotification(messageText);
-    setTimeout(() => {
-      setProcessNotification(null);
-    }, 3000);
+    setTimeout(() => setProcessNotification(null), 3000);
   };
 
-  // --- OPERATIONAL CONTROL HANDLERS ---
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim() === '') return;
-
     setLoading(true);
     setTimeout(() => {
-      const sanitizedCityName = searchQuery.trim().charAt(0).toUpperCase() + searchQuery.trim().slice(1).toLowerCase();
-      setCurrentCity(sanitizedCityName);
+      const sanitized = searchQuery.trim().charAt(0).toUpperCase() + searchQuery.trim().slice(1).toLowerCase();
+      setCurrentCity(sanitized);
       setSearchQuery('');
       setLoading(false);
-      triggerNotificationMessage(`Successfully updated metrics for ${sanitizedCityName}.`);
+      triggerNotificationMessage(`Loaded ${sanitized}`);
     }, 400);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      if (searchQuery.trim() !== '') {
-        setLoading(true);
-        setTimeout(() => {
-          const sanitizedCityName = searchQuery.trim().charAt(0).toUpperCase() + searchQuery.trim().slice(1).toLowerCase();
-          setCurrentCity(sanitizedCityName);
-          setSearchQuery('');
-          setLoading(false);
-          triggerNotificationMessage(`Successfully updated metrics for ${sanitizedCityName}.`);
-        }, 400);
-      }
-    }
   };
 
   const handleUnitToggleAction = () => {
     const nextUnit = displayUnit === 'C' ? 'F' : 'C';
     setDisplayUnit(nextUnit);
     localStorage.setItem('weather_unit', nextUnit);
-    triggerNotificationMessage(`Display metrics toggled to °${nextUnit}.`);
   };
 
   const handleThemeToggleAction = () => {
     const nextTheme = appTheme === 'light' ? 'dark' : 'light';
     setAppTheme(nextTheme);
     localStorage.setItem('weather_theme', nextTheme);
-    triggerNotificationMessage(`Visual interface swapped to ${nextTheme} mode.`);
   };
 
   const handleFavoritesToggleAction = () => {
-    let updatedFavoritesList: string[];
+    let updated: string[];
     if (favorites.includes(currentCity)) {
-      updatedFavoritesList = favorites.filter((city) => city !== currentCity);
-      triggerNotificationMessage(`${currentCity} removed from bookmarks.`);
+      updated = favorites.filter((c) => c !== currentCity);
     } else {
-      updatedFavoritesList = [...favorites, currentCity];
-      triggerNotificationMessage(`${currentCity} saved to storage bookmarks list.`);
+      updated = [...favorites, currentCity];
     }
-    setFavorites(updatedFavoritesList);
-    localStorage.setItem('weather_favorites', JSON.stringify(updatedFavoritesList));
+    setFavorites(updated);
+    localStorage.setItem('weather_favorites', JSON.stringify(updated));
   };
 
-  const handleFavoriteClickRoute = (selectedCity: string) => {
-    setLoading(true);
-    setTimeout(() => {
-      setCurrentCity(selectedCity);
-      setLoading(false);
-      triggerNotificationMessage(`Navigated to bookmarked profile: ${selectedCity}.`);
-    }, 300);
-  };
-
-  // --- DATA COLLECTION OBJECTS ---
   const hourlyDataset: HourlyForecastNode[] = [
     { time: '09:00 AM', tempC: 19, tempF: 66, condition: 'Clear', emoji: '☀️' },
-    { time: '12:00 PM', tempC: 24, tempF: 75, condition: 'Scattered Clouds', emoji: '⛅' },
+    { time: '12:00 PM', tempC: 24, tempF: 75, condition: 'Clouds', emoji: '⛅' },
     { time: '03:00 PM', tempC: 22, tempF: 72, condition: 'Overcast', emoji: '☁️' },
-    { time: '06:00 PM', tempC: 18, tempF: 64, condition: 'Few Clouds', emoji: '⛅' },
-    { time: '09:00 PM', tempC: 15, tempF: 59, condition: 'Clear', emoji: '🌙' },
+    { time: '06:00 PM', tempC: 18, tempF: 64, condition: 'Clouds', emoji: '⛅' }
   ];
 
   const dailyDataset: DailyForecastNode[] = [
-    { day: 'Mon', highC: 24, lowC: 14, highF: 75, lowF: 57, condition: 'Clear Sky', emoji: '☀️' },
-    { day: 'Tue', highC: 26, lowC: 15, highF: 79, lowF: 59, condition: 'Few Clouds', emoji: '⛅' },
-    { day: 'Wed', highC: 23, lowC: 13, highF: 73, lowF: 55, condition: 'Scattered', emoji: '☁️' },
-    { day: 'Thu', highC: 21, lowC: 12, highF: 70, lowF: 54, condition: 'Light Rain', emoji: '🌧️' },
-    { day: 'Fri', highC: 22, lowC: 14, highF: 72, lowF: 57, condition: 'Clear Sky', emoji: '☀️' },
+    { day: 'Mon', highC: 24, lowC: 14, highF: 75, lowF: 57, condition: 'Clear', emoji: '☀️' },
+    { day: 'Tue', highC: 26, lowC: 15, highF: 79, lowF: 59, condition: 'Clouds', emoji: '⛅' },
+    { day: 'Wed', highC: 23, lowC: 13, highF: 73, lowF: 55, condition: 'Overcast', emoji: '☁️' }
   ];
 
   if (loading) {
-    return (
-      <div className="status-container-centered">
-        <div className="status-content">
-          <div className="status-icon loading-animation">⏳</div>
-          <p className="status-text">Updating atmospheric metrics...</p>
-        </div>
-      </div>
-    );
+    return <div className="status-container-centered"><div className="status-content"><p>Loading...</p></div></div>;
   }
 
   return (
     <div className="main-page-wrapper">
-      
-      {/* PROCESS NOTIFICATION BOX */}
-      {processNotification && (
-        <div className="permission-alert-banner">
-           {processNotification}
-        </div>
-      )}
-
-      {/* SEARCH BAR INPUT GROUP */}
+      {processNotification && <div className="permission-alert-banner">ℹ️ {processNotification}</div>}
       <div className="search-section-box">
         <form onSubmit={handleSearchSubmit} className="search-input-group">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search city..."
-            onKeyDown={handleKeyPress}
-            className="city-search-input"
-          />
-          <button type="submit" className="search-submit-button">
-            Search
-          </button>
+          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search city..." className="city-search-input" />
+          <button type="submit" className="search-submit-button">Search</button>
         </form>
       </div>
-
-      {/* MAIN WEATHER CARD DISPLAY */}
       <div className="weather-card-container">
         <div className="weather-card-header">
           <div>
@@ -209,56 +136,23 @@ const Home: React.FC = () => {
           </div>
           <span className="weather-visual-emoji">⛅</span>
         </div>
-
         <div className="weather-card-body">
-          <div className="temperature-text">
-            {displayUnit === 'C' ? '22°C' : '72°F'}
-          </div>
-
+          <div className="temperature-text">{displayUnit === 'C' ? '22°C' : '72°F'}</div>
           <div className="secondary-stats">
-            <div className="stat-item-row">
-              <span className="stat-label">Humidity:</span>
-              <span className="stat-value">64%</span>
-            </div>
-            <div className="stat-item-row">
-              <span className="stat-label">Wind Speed:</span>
-              <span className="stat-value">4.2 m/s</span>
-            </div>
+            <div className="stat-item-row"><span className="stat-label">Humidity:</span><span className="stat-value">64%</span></div>
+            <div className="stat-item-row"><span className="stat-label">Wind Speed:</span><span className="stat-value">4.2 m/s</span></div>
           </div>
         </div>
-
         <div className="weather-card-footer">
-          <button type="button" onClick={handleUnitToggleAction} className="search-submit-button">
-            Unit: °{displayUnit}
-          </button>
-          <button type="button" onClick={handleThemeToggleAction} className="search-submit-button">
-            Theme: {appTheme.toUpperCase()}
-          </button>
-          <button type="button" onClick={handleFavoritesToggleAction} className="search-submit-button">
-            {favorites.includes(currentCity) ? '⭐ Saved' : '⭐ Save Location'}
-          </button>
+          <button type="button" onClick={handleUnitToggleAction} className="search-submit-button">Unit: °{displayUnit}</button>
+          <button type="button" onClick={handleThemeToggleAction} className="search-submit-button">Theme</button>
+          <button type="button" onClick={handleFavoritesToggleAction} className="search-submit-button">{favorites.includes(currentCity) ? '⭐ Saved' : '⭐ Save'}</button>
         </div>
       </div>
-
-      {/* VIEW SELECTION TOGGLES */}
       <div className="view-toggle-button-row">
-        <button
-          type="button"
-          className={viewType === 'hourly' ? 'primary' : ''}
-          onClick={() => setViewType('hourly')}
-        >
-          Hourly
-        </button>
-        <button
-          type="button"
-          className={viewType === 'daily' ? 'primary' : ''}
-          onClick={() => setViewType('daily')}
-        >
-          Daily
-        </button>
+        <button type="button" className={viewType === 'hourly' ? 'primary' : ''} onClick={() => setViewType('hourly')}>Hourly</button>
+        <button type="button" className={viewType === 'daily' ? 'primary' : ''} onClick={() => setViewType('daily')}>Daily</button>
       </div>
-
-      {/* FORECAST VIEW WRAPPER */}
       <div className="forecast-results-container">
         {viewType === 'hourly' ? (
           <div className="forecast-card-wrapper">
@@ -267,9 +161,39 @@ const Home: React.FC = () => {
               <div className="scroll-flex-track">
                 {hourlyDataset.map((node, idx) => (
                   <div key={idx} className="forecast-column-node">
-                    <div className="node-time-header">{node.time}</div>
-                    <div className="node-icon-visual-box">{node.emoji}</div>
-                    <div className="node-temperature-readout">
-                      {displayUnit === 'C' ? `${node.tempC}°C` : `${node.tempF}°F`}
-                    </div>
-                    <div className="node-condition-label">{node.condition}</div>
+                    <div>{node.time}</div><div>{node.emoji}</div>
+                    <div>{displayUnit === 'C' ? `${node.tempC}°C` : `${node.tempF}°F`}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="daily-forecast-container">
+            <h3 className="daily-forecast-title">5-Day Forecast</h3>
+            <div className="daily-list-stack">
+              {dailyDataset.map((row, idx) => (
+                <div key={idx} className="forecast-row-item">
+                  <span>{row.day} {row.emoji}</span>
+                  <span>{displayUnit === 'C' ? `${row.highC}°C` : `${row.highF}°F`}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      {favorites.length > 0 && (
+        <div className="forecast-card-wrapper">
+          <h3 className="forecast-section-title">Saved Locations</h3>
+          <div className="favorites-button-grid">
+            {favorites.map((city) => (
+              <button key={city} type="button" onClick={() => setCurrentCity(city)} className="forecast-column-node">⭐ {city}</button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Home;
