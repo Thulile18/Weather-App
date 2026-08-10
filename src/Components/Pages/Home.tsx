@@ -11,6 +11,12 @@ import Input from '../Input';
 import type { WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
 import { NotificationService } from '../Utils/Notifications';
 
+// Force compiler to ignore side-effect CSS imports globally from this view
+// @ts-ignore
+import '../../App.css';
+// @ts-ignore
+import '../Layout/Header.css';
+
 const Home: React.FC = () => {
   // --- STATE VARIABLES ---
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -37,7 +43,9 @@ const Home: React.FC = () => {
   
   // Helper variables for clean template code
   const favorites = getFavoriteLocations();
-  const currentUnit = settings?.unit || 'celsius';
+  
+  // FIXED: Converts 'celsius' / 'fahrenheit' to exactly 'C' / 'F' to clear TS2322 error
+  const currentUnit: 'C' | 'F' = settings?.unit === 'fahrenheit' ? 'F' : 'C';
 
   // --- EFFECT 1: Ask for browser notification permissions ---
   useEffect(() => {
@@ -255,13 +263,19 @@ const Home: React.FC = () => {
             </div>
           )}
 
-          {/* Dynamic Forecast Metrics Timeline Rendering Container */}
+          {/* Forecast Data Breakdown Cards */}
           {forecast && (
-            <div className="forecast-timeline-panel">
+            <div className="forecast-results-container">
               {viewType === 'hourly' ? (
-                <HourlyForecast forecasts={forecast.hourly} unit={currentUnit} />
+                <HourlyForecast 
+                  data={forecast.hourly || []} 
+                  unit={currentUnit} 
+                />
               ) : (
-                <DailyForecast forecasts={forecast.daily} unit={currentUnit} />
+                <DailyForecast 
+                  data={forecast.daily || []} 
+                  unit={currentUnit} 
+                />
               )}
             </div>
           )}
