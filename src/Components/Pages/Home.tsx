@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { WeatherService } from '../Services/TS_WeatherService';
+import { useWeather } from '../Hooks/UseWeather';
+import { useLocation } from '../Hooks/UseLocation';
 import WeatherDisplay from '../../Weather/WeatherDisplay';
 import HourlyForecast from '../../Weather/HourlyForecast';
 import DailyForecast from '../../Weather/DailyForecast';
@@ -8,8 +9,9 @@ import WeatherAlert from '../../Weather/WeatherAlert';
 import Button from '../Button';
 import Input from '../Input';
 import type { WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
+import { NotificationService } from '../Utils/Notifications';
 
-// Force compiler to ignore strict local CSS declarations during compilation
+// Tell the compiler to ignore local CSS checking for the build to pass safely
 // @ts-ignore
 import './Home.css';
 // @ts-ignore
@@ -22,144 +24,202 @@ const Home: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewType, setViewType] = useState<'hourly' | 'daily'>('hourly');
   const [alerts, setAlerts] = useState<WeatherAlertType[]>([]);
+  const [notificationPermission, setNotificationPermission] = useState<boolean>(false);
   
-  const [currentWeather, setCurrentWeather] = useState<any>(null);
-  const [forecast, setForecast] = useState<any>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [currentUnit, setCurrentUnit] = useState<'celsius' | 'fahrenheit'>('celsius');
-  const [favorites, setFavorites] = useState<string[]>([]);
+  // --- OPERATIONS CUSTOM HOOKS ---
+  const {
+    currentWeather,
+    forecast,
+    loading,
+    error,
+    settings,
+    fetchWeather,
+    fetchWeatherByCoords,
+    updateSettings,
+    saveLocation,
+    removeLocation,
+    getFavoriteLocations
+  } = useWeather();
 
-  // Load initial weather baseline dashboard metrics and device persistent tokens on mount
+  const { location: userLocation, loading: locationLoading } = useLocation();
+  
+  // Clean helper variables for your rendering templates
+  const favorites = getFavoriteLocations();
+  const currentUnit = settings?.unit || 'celsius';
+
+  // --- RECURRING SIDE EFFECTS ---
+
+  // Effect 1: Verify browser notification permissions
   useEffect(() => {
-    handleFetchWeather('Johannesburg');
-
-    try {
-      const saved = localStorage.getItem('weather_favorites');
-      if (saved) {
-        setFavorites(JSON.parse(saved));
-      }
-    } catch (e) {
-      console.error('Storage reading failure tracking overlay:', e);
-    }
+    const checkPermission = async () => {
+      const granted = await NotificationService.requestPermission();
+      setNotificationPermission(granted);
+    };
+    checkPermission();
   }, []);
 
-  const handleFetchWeather = async (cityName: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const weatherData = await WeatherService.getWeatherByCity(cityName);
-      const forecastData = await WeatherService.getForecast(cityName);
-      
-      setCurrentWeather(weatherData);
-      setForecast(forecastData);
-    } catch (err: any) {
-      setError(err.message || 'Failed to locate the requested weather metrics.');
-    } finally {
-      setLoading(false);
+  // Effect 2: Capture initial user location coordinates on startup
+  useEffect(() => {
+    if (userLocation && !currentWeather) {
+      fetchWeatherByCoords(userLocation.lat, userLocation.lon);
     }
-  };
+  }, [userLocation, currentWeather, fetchWeatherByCoords]);
 
-  // --- ACTIONS HANDLERS ---
+  // Effect 3: Track weather updates to trigger alerts
+  useEffect(() => {
+    if (!currentWeather) return;
+
+    const newAlerts: WeatherAlertType[] = [];
+    const city = currentWeather.location;
+
+    // Warning Check 1: Extreme Hot Temperature
+    if (currentWeather.temperature > 35) {
+      newAlerts.push({
+        type: 'Heat Warning',
+        severity: 'warning',
+        message: 'Extreme heat detected. Stay hydrated and avoid prolonged sun exposure.',
+        time: new Date().toLocaleString()
+      });
+      NotificationService.sendWeatherAlert(city, 'Extreme heat detected! Stay hydrated.', 'warning');
+    }
+    
+    // Warning Check 2: Severe Windy Gale
+    if (currentWeather.windspeed > 15) {
+      newAlerts.push({
+        type: 'Wind Advisory',
+        severity: 'watch',
+        message: 'High winds expected. Secure outdoor objects.',
+        time: new Date().toLocaleString()
+      });
+      NotificationService.sendWeatherAlert(city, 'High winds expected! Secure outdoor objects.', 'watch');
+    }
+
+    // Warning Check 3: Below Zero Freeze
+    if (currentWeather.temperature < 0) {
+      newAlerts.push({
+        type: 'Freeze Warning',
+        severity: 'warning',
+        message: 'Freezing temperatures detected. Protect plants and pipes.',
+        time: new Date().toLocaleString()
+      });
+      NotificationService.sendWeatherAlert(city, 'Freezing temperatures! Protect plants and pipes.', 'warning');
+    }
+
+    // Warning Check 4: Combined Rain and High Heat
+    const conditionText = currentWeather.condition ? currentWeather.condition.toLowerCase() : '';
+    if (conditionText.includes('rain') && currentWeather.temperature > 30) {
+      newAlerts.push({
+        type: 'Storm Alert',
+        severity: 'watch',
+        message: 'Rain with high temperatures. Stay prepared.',
+        time: new Date().toLocaleString()
+      });
+      NotificationService.sendWeatherAlert(city, 'Rain with high temperatures. Be prepared.', 'watch');
+    }
+
+    // Warning Check 5: Heavy Dense Fog
+    if (conditionText.includes('fog')) {
+      newAlerts.push({
+        type: 'Fog Advisory',
+        severity: 'advisory',
+        message: 'Low visibility due to fog. Drive carefully.',
+        time: new Date().toLocaleString()
+      });
+      NotificationService.sendWeatherAlert(city, 'Low visibility due to fog. Drive carefully.', 'advisory');
+    }
+
+    setAlerts(newAlerts);
+  }, [currentWeather]);
+
+  // --- COMPONENT HANDLERS ---
+
+  // Dispatches text filtering search queries
   const handleSearch = () => {
-    if (searchQuery.trim()) {
-      handleFetchWeather(searchQuery.trim());
+    if (searchQuery.trim() !== '') {
+      fetchWeather(searchQuery.trim());
       setSearchQuery('');
     }
   };
 
+  // Maps keyboard Enter key entry
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSearch();
     }
   };
 
+  // Swaps metric indicators preferences settings
   const toggleUnit = () => {
-    setCurrentUnit(prev => prev === 'celsius' ? 'fahrenheit' : 'celsius');
-  };
-
-  const toggleFavorite = () => {
-    if (!currentWeather) return;
-    const targetCity = currentWeather.cityName || currentWeather.location || 'Johannesburg';
-    
-    let updatedFavorites: string[];
-    if (favorites.includes(targetCity)) {
-      updatedFavorites = favorites.filter(city => city !== targetCity);
-    } else {
-      updatedFavorites = [...favorites, targetCity];
+    if (settings) {
+      const newUnit = settings.unit === 'celsius' ? 'fahrenheit' : 'celsius';
+      updateSettings({ ...settings, unit: newUnit });
     }
-    
-    setFavorites(updatedFavorites);
-    localStorage.setItem('weather_favorites', JSON.stringify(updatedFavorites));
   };
 
-  if (loading) {
+  // Toggles active coordinates inside local saving arrays
+  const toggleFavorite = () => {
+    if (currentWeather) {
+      const isFavorite = favorites.includes(currentWeather.location);
+      if (isFavorite) {
+        removeLocation(currentWeather.location);
+      } else {
+        saveLocation(currentWeather.location);
+      }
+    }
+  };
+
+  // Removes a single alert block card index when clicked
+  const dismissAlert = (index: number) => {
+    setAlerts(alerts.filter((_, i) => i !== index));
+  };
+
+  // --- LOADER OVERLAY INTERFACES ---
+  if (loading || locationLoading) {
     return (
       <div className="status-container-centered">
         <div className="status-content">
-          <div className="status-icon loading-animation">⏳</div>
+          <div className="status-icon loading-animation"></div>
           <p className="status-text">Loading weather data...</p>
         </div>
       </div>
     );
   }
 
-  // Fallbacks to render explicit HTML if child components are throwing internal mapping crashes
-  const renderSafeDisplay = () => {
-    try {
-      return (
-        <WeatherDisplay
-          weather={currentWeather}
-          unit={currentUnit === 'celsius' ? 'C' : 'F'}
-          onToggleUnit={toggleUnit}
-          isFavorite={favorites.includes(currentWeather.cityName || currentWeather.location)}
-          onToggleFavorite={toggleFavorite}
-        />
-      );
-    } catch (e) {
-      return (
-        <div className="weather-card-container" style={{ textAlign: 'center' }}>
-          <h2 className="location-title">{currentWeather?.location || 'Johannesburg'}</h2>
-          <div className="temperature-text">22°{currentUnit === 'celsius' ? 'C' : 'F'}</div>
-          <p className="condition-subtitle">Scattered Clouds</p>
-          <div style={{ marginTop: '12px' }}>
-            <Button onClick={toggleUnit} style={{ marginRight: '8px' }}>Toggle Unit</Button>
-            <Button onClick={toggleFavorite}>
-              {favorites.includes(currentWeather?.cityName || currentWeather?.location) ? '⭐ Saved' : '⭐ Save'}
-            </Button>
-          </div>
+  // --- ERROR OVERLAY INTERFACES ---
+  if (error) {
+    return (
+      <div className="status-container-centered">
+        <div className="status-content">
+          <div className="status-icon"></div>
+          <p className="error-message-text">{error}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
         </div>
-      );
-    }
-  };
+      </div>
+    );
+  }
 
-  const renderSafeForecast = () => {
-    try {
-      return viewType === 'hourly' ? (
-        <HourlyForecast weather={currentWeather} unit={currentUnit === 'celsius' ? 'C' : 'F'} />
-      ) : (
-        <DailyForecast weather={currentWeather} unit={currentUnit === 'celsius' ? 'C' : 'F'} />
-      );
-    } catch (e) {
-      return (
-        <div className="forecast-card-wrapper">
-          <h3 className="forecast-section-title" style={{ textTransform: 'capitalize' }}>{viewType} Forecast</h3>
-          <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', padding: '10px 0' }}>
-            <div className="forecast-column-node"><div>08:00 AM</div><div>☀️</div><strong>20°</strong></div>
-            <div className="forecast-column-node"><div>12:00 PM</div><div>⛅</div><strong>24°</strong></div>
-            <div className="forecast-column-node"><div>04:00 PM</div><div>☁️</div>strong&gt;22°</strong></div>
-          </div>
-        </div>
-      );
-    }
-  };
-
-  // --- FINAL RENDER TEMPLATE ---
+  // --- GLOBAL LAYOUT DOM TREE ---
   return (
     <div className="main-page-wrapper">
-      {/* Search Input Bar Group */}
+      {/* Alert banner block completely hidden from this area to wipe clean dead white layout spacing */}
+
+      {/* Render current weather warnings lists */}
+      {alerts.length > 0 && (
+        <div className="alerts-layout-list">
+          {alerts.map((alert, index) => (
+            <WeatherAlert
+              key={index}
+              alert={alert}
+              onDismiss={() => dismissAlert(index)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Input panel section text box box group wrapper */}
       <div className="search-section-box">
         <div className="search-input-group">
+          {/* FIXED: Formatted the input's onChange directly to capture value properties safely */}
           <Input
             value={searchQuery}
             onChange={(e: any) => setSearchQuery(e.target ? e.target.value : e)}
@@ -173,25 +233,52 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {error && <div style={{ color: '#dc3545', textAlign: 'center', marginBottom: '16px' }}>{error}</div>}
-
+      {/* Core Meteorological Data Display Panels */}
       {currentWeather && (
         <div className="dashboard-content-stack">
-          {/* Safe Display Mount */}
-          {renderSafeDisplay()}
+          {/* FIXED: Passed currentWeather directly into the expected weather attribute tag */}
+          <WeatherDisplay
+            weather={currentWeather}
+            unit={currentUnit}
+            onToggleUnit={toggleUnit}
+            isFavorite={favorites.includes(currentWeather.location)}
+            onToggleFavorite={toggleFavorite}
+          />
 
-          {/* Toggle Switches */}
-          <div className="view-toggle-button-row">
-            <Button variant={viewType === 'hourly' ? 'primary' : 'secondary'} onClick={() => setViewType('hourly')}>
-               Hourly
-            </Button>
-            <Button variant={viewType === 'daily' ? 'primary' : 'secondary'} onClick={() => setViewType('daily')}>
-               Daily
-            </Button>
-          </div>
+          {/* Range selection navigation toggle tab rows */}
+          {forecast && (
+            <div className="view-toggle-button-row">
+              <Button
+                variant={viewType === 'hourly' ? 'primary' : 'secondary'}
+                onClick={() => setViewType('hourly')}
+              >
+                 Hourly
+              </Button>
+              <Button
+                variant={viewType === 'daily' ? 'primary' : 'secondary'}
+                onClick={() => setViewType('daily')}
+              >
+                 Daily
+              </Button>
+            </div>
+          )}
 
-          {/* Safe Forecast Mount */}
-          {renderSafeForecast()}
+          {/* Conditional panel view data card injections rendering block */}
+          {forecast && (
+            <div className="forecast-results-container">
+              {viewType === 'hourly' ? (
+                <HourlyForecast 
+                  weather={currentWeather} 
+                  unit={currentUnit} 
+                />
+              ) : (
+                <DailyForecast 
+                  weather={currentWeather} 
+                  unit={currentUnit} 
+                />
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
