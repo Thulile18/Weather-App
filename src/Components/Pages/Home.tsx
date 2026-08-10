@@ -8,7 +8,7 @@ import '../../App.css';
 // @ts-ignore
 import '../Layout/Header.css';
 
-// --- DATA STRUCTURE TYPES (Meets Evaluation Criteria 4 & 5) ---
+// --- DATA STRUCTURE TYPES ---
 interface HourlyForecastNode {
   time: string;
   tempC: number;
@@ -43,11 +43,11 @@ const Home: React.FC = () => {
     // Automatically trigger native browser geolocation directly inside Home to prevent hook crashes
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        () => {
           setCurrentCity('Johannesburg (Local)');
           triggerNotificationMessage('Location access granted. Displaying local area weather.');
         },
-        (error) => {
+        () => {
           console.log('Location denied, using default city.');
           setCurrentCity('Johannesburg');
         },
@@ -148,7 +148,7 @@ const Home: React.FC = () => {
   };
 
   // --- DYNAMIC DATA STRUCTURING SETS ---
-  const hourlyDataset: LocalHourlyForecastNode[] = [
+  const hourlyDataset: HourlyForecastNode[] = [
     { time: '09:00 AM', tempC: 19, tempF: 66, condition: 'Clear', emoji: '☀️' },
     { time: '12:00 PM', tempC: 24, tempF: 75, condition: 'Scattered Clouds', emoji: '⛅' },
     { time: '03:00 PM', tempC: 22, tempF: 72, condition: 'Overcast', emoji: '☁️' },
@@ -156,7 +156,7 @@ const Home: React.FC = () => {
     { time: '09:00 PM', tempC: 15, tempF: 59, condition: 'Clear', emoji: '🌙' },
   ];
 
-  const dailyDataset: LocalDailyForecastNode[] = [
+  const dailyDataset: DailyForecastNode[] = [
     { day: 'Mon', highC: 24, lowC: 14, highF: 75, lowF: 57, condition: 'Clear Sky', emoji: '☀️' },
     { day: 'Tue', highC: 26, lowC: 15, highF: 79, lowF: 59, condition: 'Few Clouds', emoji: '⛅' },
     { day: 'Wed', highC: 23, lowC: 13, highF: 73, lowF: 55, condition: 'Scattered', emoji: '☁️' },
@@ -200,7 +200,7 @@ const Home: React.FC = () => {
             textAlign: 'center'
           }}
         >
-          ℹ️ {processNotification}
+           {processNotification}
         </div>
       )}
 
@@ -242,3 +242,4 @@ const Home: React.FC = () => {
               <span className="stat-label" style={{ color: '#8899aa' }}>Humidity:</span>
               <span className="stat-value" style={{ color: appTheme === 'dark' ? '#fff' : '#1a2a3a', fontWeight: 500 }}>64%</span>
             </div>
+            <div className="stat-item-row" style={{ fontSize: '13px' }}>
