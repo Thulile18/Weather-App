@@ -152,7 +152,7 @@ const Home: React.FC = () => {
 
   return (
     <div className={`main-page-wrapper theme-${appTheme}`}>
-      {processNotification && <div className="permission-alert-banner">ℹ️ {processNotification}</div>}
+      {processNotification && <div className="permission-alert-banner">ℹpx {processNotification}</div>}
 
       <div className="search-section-box">
         <form onSubmit={handleSearchSubmit} className="search-input-group">
