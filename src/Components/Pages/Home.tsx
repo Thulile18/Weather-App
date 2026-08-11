@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 
 import './Home.css';
 import '../../App.css';
@@ -21,7 +20,6 @@ interface DailyForecastNode {
 }
 
 const Home: React.FC = () => {
-  // --- APPLICATION STATE STRINGS ---
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewType, setViewType] = useState<'hourly' | 'daily'>('hourly');
   const [currentCity, setCurrentCity] = useState<string>('Pietermaritzburg');
@@ -31,7 +29,6 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [processNotification, setProcessNotification] = useState<string | null>(null);
 
-  // --- DYNAMIC METEOROLOGICAL SOURCE DATA (Matches your requested panels) ---
   const [weatherData, setWeatherData] = useState({
     tempC: 10,
     tempF: 50,
@@ -53,15 +50,14 @@ const Home: React.FC = () => {
     summary: 'Cloudy conditions expected around 19:00.'
   });
 
-  // --- INITIAL CACHE AND LOCATION LIFECYCLE ---
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         () => {
-          triggerNotificationMessage('Location access granted. Local weather profiles loaded.');
+          triggerNotificationMessage('Location verified. Displaying local area weather updates.');
         },
         () => {
-          console.log('Location closed, loading local defaults.');
+          console.log('Location access closed, defaulting to cached targets.');
         },
         { timeout: 3000 }
       );
@@ -87,7 +83,7 @@ const Home: React.FC = () => {
       const savedCity = localStorage.getItem('weather_cached_city');
       if (savedCity) setCurrentCity(savedCity);
     } catch (cacheError) {
-      console.error('Offline storage recovery metrics error:', cacheError);
+      console.error('Offline storage recovery failure:', cacheError);
     }
   }, []);
 
@@ -96,7 +92,6 @@ const Home: React.FC = () => {
     setTimeout(() => setProcessNotification(null), 3000);
   };
 
-  // --- INTERACTION CONTROLLERS HANDLERS ---
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim() === '') return;
@@ -140,7 +135,7 @@ const Home: React.FC = () => {
   const handleUnitToggleAction = (unit: 'C' | 'F') => {
     setDisplayUnit(unit);
     localStorage.setItem('weather_unit', unit);
-    triggerNotificationMessage(`Metrics scale updated to preferred choice.`);
+    triggerNotificationMessage('Metrics scale updated to preferred choice.');
   };
 
   const handleThemeToggleAction = () => {
@@ -164,7 +159,6 @@ const Home: React.FC = () => {
     localStorage.setItem('weather_favorites', JSON.stringify(updatedRegister));
   };
 
-  // --- DATA COLLECTION ITERATIONS LOOPS ---
   const hourlyDataset: HourlyForecastNode[] = [
     { time: 'Now', temp: displayUnit === 'C' ? `${weatherData.tempC}°` : `${weatherData.tempF}°`, pop: '35%', emoji: weatherData.emoji },
     { time: '19:00', temp: displayUnit === 'C' ? `${weatherData.tempC}°` : `${weatherData.tempF}°`, pop: '30%', emoji: '☁️' },
@@ -188,14 +182,14 @@ const Home: React.FC = () => {
   ];
 
   if (loading) {
-    return <div className="status-container-centered"><div className="status-content"><p>Updating atmospheric data fields...</p></div></div>;
+    return <div className="status-container-centered"><div className="status-content"><p>Updating operational data blocks...</p></div></div>;
   }
 
   return (
     <div className={`main-page-wrapper theme-${appTheme}`}>
       {processNotification && <div className="permission-alert-banner">ℹ️ {processNotification}</div>}
 
-      {/* ITEM 1: SEARCH BAR AND PREPLACES LIST ROW */}
+      {/* SEARCH FIELD BAR GROUP */}
       <div className="search-section-box">
         <form onSubmit={handleSearchSubmit} className="search-input-group">
           <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search for a city or airport" className="city-search-input" />
@@ -203,7 +197,7 @@ const Home: React.FC = () => {
         </form>
       </div>
 
-      {/* ITEM 2: QUICK SWITCH SIDEBAR MAP TILES */}
+      {/* QUICK SWITCH INTERACTIVE SIDEBAR REGISTER MAP */}
       <div className="forecast-card-wrapper">
         <h3 className="forecast-section-title">Weather Portal Active Register</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -227,7 +221,14 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* ITEM 3: CORE LOCATION VIEW SUMMARY HEADER DISPLAY */}
+      {/* CORE LOCATION METRICS HEADER CONTAINER VIEW */}
       <div className="weather-card-container">
-
-        export default Home;
+        <div className="weather-card-header">
+          <div>
+            <h2 className="location-title">{currentCity}</h2>
+            <p className="condition-subtitle">{weatherData.cond}</p>
+          </div>
+          <span className="weather-visual-emoji">{weatherData.emoji}</span>
+        </div>
+        
+      export default Home;
