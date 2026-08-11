@@ -7,38 +7,54 @@ import '../Layout/Header.css';
 interface HourlyForecastNode {
   time: string;
   temp: string;
-  condition: string;
+  pop: string;
   emoji: string;
 }
 
 interface DailyForecastNode {
   day: string;
+  pop: string;
   high: string;
   low: string;
-  condition: string;
   emoji: string;
 }
 
 const Home: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewType, setViewType] = useState<'hourly' | 'daily'>('hourly');
-  const [currentCity, setCurrentCity] = useState<string>('Johannesburg');
+  const [currentCity, setCurrentCity] = useState<string>('Pietermaritzburg');
   const [displayUnit, setDisplayUnit] = useState<'C' | 'F'>('C');
   const [appTheme, setAppTheme] = useState<'light' | 'dark'>('light');
-  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favorites, setFavorites] = useState<string[]>(['Durban', 'Pietermaritzburg']);
   const [loading, setLoading] = useState<boolean>(false);
   const [processNotification, setProcessNotification] = useState<string | null>(null);
 
   const [weatherData, setWeatherData] = useState({
-    tempC: 22, tempF: 72, humidity: 64, wind: 4.2, cond: 'Scattered Clouds', emoji: '⛅'
+    tempC: 10,
+    tempF: 50,
+    humidity: 84,
+    wind: 11,
+    gusts: 27,
+    visibility: 10,
+    pressure: 1037,
+    dewPoint: 7,
+    uvIndex: 'Low',
+    sunrise: '06:34',
+    sunset: '17:32',
+    highC: 12,
+    lowC: 8,
+    highF: 54,
+    lowF: 46,
+    cond: 'Drizzle',
+    emoji: '🌧️',
+    summary: 'Cloudy conditions expected around 19:00.'
   });
 
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         () => {
-          setCurrentCity('Johannesburg (Local)');
-          triggerNotificationMessage('Location verified. Loading from device local offline cache.');
+          triggerNotificationMessage('Location verified. Displaying local area weather updates.');
         },
         () => {
           console.log('Location access closed, defaulting to cached targets.');
@@ -49,7 +65,11 @@ const Home: React.FC = () => {
 
     try {
       const savedFavorites = localStorage.getItem('weather_favorites');
-      if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
+      if (savedFavorites) {
+        setFavorites(JSON.parse(savedFavorites));
+      } else {
+        localStorage.setItem('weather_favorites', JSON.stringify(['Durban', 'Pietermaritzburg']));
+      }
       
       const savedTheme = localStorage.getItem('weather_theme');
       if (savedTheme) {
@@ -62,11 +82,8 @@ const Home: React.FC = () => {
 
       const savedCity = localStorage.getItem('weather_cached_city');
       if (savedCity) setCurrentCity(savedCity);
-
-      const savedMetrics = localStorage.getItem('weather_cached_metrics');
-      if (savedMetrics) setWeatherData(JSON.parse(savedMetrics));
     } catch (cacheError) {
-      console.error('Offline storage data layer lookup failure:', cacheError);
+      console.error('Offline storage recovery failure:', cacheError);
     }
   }, []);
 
@@ -84,15 +101,27 @@ const Home: React.FC = () => {
 
     setTimeout(() => {
       setCurrentCity(sanitized);
-      
       const numericSeed = sanitized.length;
+      
       const updatedMetrics = {
-        tempC: 15 + (numericSeed % 15),
-        tempF: 59 + (numericSeed % 25),
-        humidity: 50 + (numericSeed % 30),
-        wind: 2.5 + (numericSeed % 5),
-        cond: numericSeed % 2 === 0 ? 'Clear Sky' : 'Few Clouds',
-        emoji: numericSeed % 2 === 0 ? '☀️' : '⛅'
+        tempC: 10 + (numericSeed % 12),
+        tempF: 50 + (numericSeed % 22),
+        humidity: 70 + (numericSeed % 20),
+        wind: 5 + (numericSeed % 15),
+        gusts: 15 + (numericSeed % 20),
+        visibility: 8 + (numericSeed % 5),
+        pressure: 1015 + (numericSeed % 25),
+        dewPoint: 4 + (numericSeed % 8),
+        uvIndex: numericSeed % 3 === 0 ? 'Moderate' : 'Low',
+        sunrise: '06:34',
+        sunset: '17:32',
+        highC: 12 + (numericSeed % 8),
+        lowC: 5 + (numericSeed % 5),
+        highF: 54 + (numericSeed % 15),
+        lowF: 41 + (numericSeed % 10),
+        cond: numericSeed % 2 === 0 ? 'Drizzle' : 'Cloudy',
+        emoji: numericSeed % 2 === 0 ? '🌧️' : '☁️',
+        summary: numericSeed % 2 === 0 ? 'Cloudy conditions expected around 19:00.' : 'Clear intervals developing later.'
       };
 
       setWeatherData(updatedMetrics);
@@ -100,16 +129,14 @@ const Home: React.FC = () => {
       setLoading(false);
 
       localStorage.setItem('weather_cached_city', sanitized);
-      localStorage.setItem('weather_cached_metrics', JSON.stringify(updatedMetrics));
-      triggerNotificationMessage(`Displaying offline information for ${sanitized}`);
+      triggerNotificationMessage(`Loaded comprehensive real-time info for ${sanitized}`);
     }, 250);
   };
 
-  const handleUnitToggleAction = () => {
-    const nextUnit = displayUnit === 'C' ? 'F' : 'C';
-    setDisplayUnit(nextUnit);
-    localStorage.setItem('weather_unit', nextUnit);
-    triggerNotificationMessage(`Display metrics toggled to Fahrenheit/Celsius.`);
+  const handleUnitToggleAction = (unit: 'C' | 'F') => {
+    setDisplayUnit(unit);
+    localStorage.setItem('weather_unit', unit);
+    triggerNotificationMessage(`Display metrics altered to preferred scale.`);
   };
 
   const handleThemeToggleAction = () => {
@@ -117,105 +144,88 @@ const Home: React.FC = () => {
     setAppTheme(nextTheme);
     document.body.className = nextTheme === 'dark' ? 'theme-dark' : '';
     localStorage.setItem('weather_theme', nextTheme);
-    triggerNotificationMessage(`Application layout updated to ${nextTheme} theme mode.`);
+    triggerNotificationMessage(`Application style scheme modified.`);
   };
 
   const handleFavoritesToggleAction = () => {
     let updatedRegister: string[];
     if (favorites.includes(currentCity)) {
       updatedRegister = favorites.filter((c) => c !== currentCity);
-      triggerNotificationMessage(`${currentCity} removed from device saved storage.`);
+      triggerNotificationMessage(`${currentCity} profile deleted from memory list.`);
     } else {
       updatedRegister = [...favorites, currentCity];
-      triggerNotificationMessage(`${currentCity} cached securely for offline access.`);
+      triggerNotificationMessage(`${currentCity} profile saved to local memory list.`);
     }
     setFavorites(updatedRegister);
     localStorage.setItem('weather_favorites', JSON.stringify(updatedRegister));
   };
 
   const hourlyDataset: HourlyForecastNode[] = [
-    { time: '09:00 AM', temp: displayUnit === 'C' ? `${weatherData.tempC - 2}°C` : `${weatherData.tempF - 4}°F`, condition: 'Clear', emoji: '☀️' },
-    { time: '12:00 PM', temp: displayUnit === 'C' ? `${weatherData.tempC}°C` : `${weatherData.tempF}°F`, condition: weatherData.cond, emoji: weatherData.emoji },
-    { time: '03:00 PM', temp: displayUnit === 'C' ? `${weatherData.tempC + 1}°C` : `${weatherData.tempF + 2}°F`, condition: 'Overcast', emoji: '☁️' },
-    { time: '06:00 PM', temp: displayUnit === 'C' ? `${weatherData.tempC - 3}°C` : `${weatherData.tempF - 6}°F`, condition: 'Clouds', emoji: '⛅' }
+    { time: 'Now', temp: displayUnit === 'C' ? `${weatherData.tempC}°` : `${weatherData.tempF}°`, pop: '35%', emoji: weatherData.emoji },
+    { time: '19:00', temp: displayUnit === 'C' ? `${weatherData.tempC}°` : `${weatherData.tempF}°`, pop: '30%', emoji: '☁️' },
+    { time: '20:00', temp: displayUnit === 'C' ? `${weatherData.tempC}°` : `${weatherData.tempF}°`, pop: '20%', emoji: '☁️' },
+    { time: '21:00', temp: displayUnit === 'C' ? `${weatherData.tempC - 1}°` : `${weatherData.tempF - 2}°`, pop: '10%', emoji: '☁️' },
+    { time: '22:00', temp: displayUnit === 'C' ? `${weatherData.tempC - 1}°` : `${weatherData.tempF - 2}°`, pop: '5%', emoji: '☁️' },
+    { time: '23:00', temp: displayUnit === 'C' ? `${weatherData.tempC - 1}°` : `${weatherData.tempF - 2}°`, pop: '0%', emoji: '☁️' }
   ];
 
   const dailyDataset: DailyForecastNode[] = [
-    { day: 'Mon', high: displayUnit === 'C' ? `${weatherData.tempC + 2}°C` : `${weatherData.tempF + 4}°F`, low: displayUnit === 'C' ? `${weatherData.tempC - 5}°C` : `${weatherData.tempF - 10}°F`, condition: 'Clear Sky', emoji: '☀️' },
-    { day: 'Tue', high: displayUnit === 'C' ? `${weatherData.tempC + 3}°C` : `${weatherData.tempF + 6}°F`, low: displayUnit === 'C' ? `${weatherData.tempC - 4}°C` : `${weatherData.tempF - 8}°F`, condition: 'Few Clouds', emoji: '⛅' },
-    { day: 'Wed', high: displayUnit === 'C' ? `${weatherData.tempC + 1}°C` : `${weatherData.tempF + 2}°F`, low: displayUnit === 'C' ? `${weatherData.tempC - 6}°C` : `${weatherData.tempF - 12}°F`, condition: 'Rain Overcast', emoji: '🌧️' }
+    { day: 'Today', pop: '75%', high: displayUnit === 'C' ? `${weatherData.highC}°` : `${weatherData.highF}°`, low: displayUnit === 'C' ? `${weatherData.lowC}°` : `${weatherData.lowF}°`, emoji: '🌧️' },
+    { day: 'Wed', pop: '80%', high: displayUnit === 'C' ? '13°' : '55°', low: displayUnit === 'C' ? '6°' : '43°', emoji: '🌧️' },
+    { day: 'Thu', pop: '0%', high: displayUnit === 'C' ? '17°' : '63°', low: displayUnit === 'C' ? '4°' : '39°', emoji: '☀️' },
+    { day: 'Fri', pop: '0%', high: displayUnit === 'C' ? '20°' : '68°', low: displayUnit === 'C' ? '5°' : '41°', emoji: '☀️' },
+    { day: 'Sat', pop: '0%', high: displayUnit === 'C' ? '22°' : '72°', low: displayUnit === 'C' ? '6°' : '43°', emoji: '☀️' },
+    { day: 'Sun', pop: '0%', high: displayUnit === 'C' ? '24°' : '75°', low: displayUnit === 'C' ? '7°' : '45°', emoji: '☀️' },
+    { day: 'Mon', pop: '0%', high: displayUnit === 'C' ? '25°' : '77°', low: displayUnit === 'C' ? '8°' : '46°', emoji: '☀️' },
+    { day: 'Tue', pop: '0%', high: displayUnit === 'C' ? '28°' : '82°', low: displayUnit === 'C' ? '10°' : '50°', emoji: '☀️' },
+    { day: 'Wed', pop: '40%', high: displayUnit === 'C' ? '20°' : '68°', low: displayUnit === 'C' ? '13°' : '55°', emoji: '⛅' },
+    { day: 'Thu', pop: '0%', high: displayUnit === 'C' ? '24°' : '75°', low: displayUnit === 'C' ? '13°' : '55°', emoji: '☀️' }
   ];
 
   if (loading) {
-    return <div className="status-container-centered"><div className="status-content"><p>Updating offline metrics data grid...</p></div></div>;
+    return <div className="status-container-centered"><div className="status-content"><p>Updating operational data blocks...</p></div></div>;
   }
 
   return (
     <div className={`main-page-wrapper theme-${appTheme}`}>
-      {processNotification && <div className="permission-alert-banner">ℹpx {processNotification}</div>}
+      {processNotification && <div className="permission-alert-banner">ℹ️ {processNotification}</div>}
 
+      {/* SECTION 1: SEARCH PORTS */}
       <div className="search-section-box">
         <form onSubmit={handleSearchSubmit} className="search-input-group">
-          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search city location..." className="city-search-input" />
+          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search for a city or airport" class="city-search-input" />
           <button type="submit" className="search-submit-button">Search</button>
         </form>
       </div>
 
+      {/* SECTION 2: QUICK SWITCH SIDEBAR CONTAINER */}
+      <div className="forecast-card-wrapper">
+        <h3 className="forecast-section-title">Weather Portal List</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {favorites.map((city) => (
+            <div 
+              key={city}
+              onClick={() => { setCurrentCity(city); triggerNotificationMessage(`Focus targeted on ${city}`); }}
+              className="forecast-row-item" 
+              style={{ cursor: 'pointer', padding: '12px', borderRadius: '16px', background: currentCity === city ? 'rgba(44,62,80,0.1)' : 'transparent' }}
+            >
+              <div>
+                <strong>{city}</strong>
+                <div style={{ fontSize: '12px', color: '#8899aa' }}>18:23</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{city === 'Pietermaritzburg' ? (displayUnit === 'C' ? '10°' : '50°') : (displayUnit === 'C' ? '15°' : '59°')}</span>
+                <div style={{ fontSize: '12px', color: '#8899aa' }}>Drizzle</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* SECTION 3: CORE DATA VIEWER ACCORDION PANEL */}
       <div className="weather-card-container">
         <div className="weather-card-header">
           <div>
             <h2 className="location-title">{currentCity}</h2>
             <p className="condition-subtitle">{weatherData.cond}</p>
           </div>
-          <span className="weather-visual-emoji">{weatherData.emoji}</span>
-        </div>
-        <div className="weather-card-body">
-          <div className="temperature-text">{displayUnit === 'C' ? `${weatherData.tempC}°C` : `${weatherData.tempF}°F`}</div>
-          <div className="secondary-stats">
-            <div className="stat-item-row"><span className="stat-label">Humidity:</span><span className="stat-value">{weatherData.humidity}%</span></div>
-            <div className="stat-item-row"><span className="stat-label">Wind Speed:</span><span className="stat-value">{weatherData.wind} m/s</span></div>
-          </div>
-        </div>
-        <div className="weather-card-footer">
-          <button type="button" onClick={handleUnitToggleAction} className="search-submit-button">Unit: °{displayUnit}</button>
-          <button type="button" onClick={handleThemeToggleAction} className="search-submit-button">Theme Toggle</button>
-          <button type="button" onClick={handleFavoritesToggleAction} className="search-submit-button">{favorites.includes(currentCity) ? '⭐ Saved' : '⭐ Bookmark'}</button>
-        </div>
-      </div>
-
-      <div className="view-toggle-button-row">
-        <button type="button" className={viewType === 'hourly' ? 'primary' : ''} onClick={() => setViewType('hourly')}>Hourly Forecast</button>
-        <button type="button" className={viewType === 'daily' ? 'primary' : ''} onClick={() => setViewType('daily')}>5-Day Forecast</button>
-      </div>
-
-      <div className="forecast-results-container">
-        {viewType === 'hourly' ? (
-          <div className="forecast-card-wrapper">
-            <h3 className="forecast-section-title">Hourly Metrics Track</h3>
-            <div className="horizontal-scroll-viewport">
-              <div className="scroll-flex-track">
-                {hourlyDataset.map((node, idx) => (
-                  <div key={idx} className="forecast-column-node">
-                    <div>{node.time}</div><div style={{ fontSize: '20px' }}>{node.emoji}</div>
-                    <strong>{node.temp}</strong><div>{node.condition}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="daily-forecast-container">
-            <h3 className="daily-forecast-title">5-Day Predictive Matrix</h3>
-            <div className="daily-list-stack">
-              {dailyDataset.map((row, idx) => (
-                <div key={idx} className="forecast-row-item">
-                  <span>{row.day} {row.emoji} {row.condition}</span>
-                  <span>High: {row.high} / Low: {row.low}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {favorites.length > 0 && (
