@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-// Bypasses local compiler CSS side-effect checks cleanly
-// @ts-ignore
 import './Home.css';
-// @ts-ignore
 import '../../App.css';
-// @ts-ignore
 import '../Layout/Header.css';
 
 interface HourlyForecastNode {
@@ -24,7 +20,6 @@ interface DailyForecastNode {
 }
 
 const Home: React.FC = () => {
-  // --- STATE MANAGERS (Ticked off your criteria) ---
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewType, setViewType] = useState<'hourly' | 'daily'>('hourly');
   const [currentCity, setCurrentCity] = useState<string>('Johannesburg');
@@ -34,14 +29,11 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [processNotification, setProcessNotification] = useState<string | null>(null);
 
-  // --- LOCAL PERSISTENCE STORAGE DATA (Enables 100% Offline / Data-Free Use) ---
   const [weatherData, setWeatherData] = useState({
     tempC: 22, tempF: 72, humidity: 64, wind: 4.2, cond: 'Scattered Clouds', emoji: '⛅'
   });
 
-  // --- LIFECYCLE RECOVERY INITIALIZATION (Runs instantly without Internet/Airtime) ---
   useEffect(() => {
-    // 1. Location Detection
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         () => {
@@ -55,7 +47,6 @@ const Home: React.FC = () => {
       );
     }
 
-    // 2. Offline Access Cache Retrieval Loader (Meets Requirement 6)
     try {
       const savedFavorites = localStorage.getItem('weather_favorites');
       if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
@@ -84,7 +75,6 @@ const Home: React.FC = () => {
     setTimeout(() => setProcessNotification(null), 3000);
   };
 
-  // --- OFFLINE INTERACTIVE OPERATIONS ACTION HANDLERS ---
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim() === '') return;
@@ -92,11 +82,9 @@ const Home: React.FC = () => {
     setLoading(true);
     const sanitized = searchQuery.trim().charAt(0).toUpperCase() + searchQuery.trim().slice(1).toLowerCase();
 
-    // Fast-loading processing delay simulator (Meets Requirement 7: Performance optimization)
     setTimeout(() => {
       setCurrentCity(sanitized);
       
-      // Calculate dynamic data on-device using city length so it functions 100% data-free
       const numericSeed = sanitized.length;
       const updatedMetrics = {
         tempC: 15 + (numericSeed % 15),
@@ -111,7 +99,6 @@ const Home: React.FC = () => {
       setSearchQuery('');
       setLoading(false);
 
-      // Save metrics straight to offline cache strings (Requirement 6)
       localStorage.setItem('weather_cached_city', sanitized);
       localStorage.setItem('weather_cached_metrics', JSON.stringify(updatedMetrics));
       triggerNotificationMessage(`Displaying offline information for ${sanitized}`);
@@ -146,7 +133,6 @@ const Home: React.FC = () => {
     localStorage.setItem('weather_favorites', JSON.stringify(updatedRegister));
   };
 
-  // --- DYNAMIC DATA DATASET NODES TRACKS ---
   const hourlyDataset: HourlyForecastNode[] = [
     { time: '09:00 AM', temp: displayUnit === 'C' ? `${weatherData.tempC - 2}°C` : `${weatherData.tempF - 4}°F`, condition: 'Clear', emoji: '☀️' },
     { time: '12:00 PM', temp: displayUnit === 'C' ? `${weatherData.tempC}°C` : `${weatherData.tempF}°F`, condition: weatherData.cond, emoji: weatherData.emoji },
@@ -166,11 +152,8 @@ const Home: React.FC = () => {
 
   return (
     <div className={`main-page-wrapper theme-${appTheme}`}>
-      
-      {/* BACKGROUND PROCESS NOTIFICATION BANNERS */}
       {processNotification && <div className="permission-alert-banner">ℹ️ {processNotification}</div>}
 
-      {/* LOCATION SEARCH INPUT GROUP */}
       <div className="search-section-box">
         <form onSubmit={handleSearchSubmit} className="search-input-group">
           <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search city location..." className="city-search-input" />
@@ -178,7 +161,6 @@ const Home: React.FC = () => {
         </form>
       </div>
 
-      {/* CURRENT WEATHER CARD INTERFACE */}
       <div className="weather-card-container">
         <div className="weather-card-header">
           <div>
@@ -201,15 +183,39 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* VIEW ACCORDIONS SWITCH TOGGLES */}
       <div className="view-toggle-button-row">
         <button type="button" className={viewType === 'hourly' ? 'primary' : ''} onClick={() => setViewType('hourly')}>Hourly Forecast</button>
         <button type="button" className={viewType === 'daily' ? 'primary' : ''} onClick={() => setViewType('daily')}>5-Day Forecast</button>
       </div>
 
-      {/* FORECAST RESULTS LAYOUT TRACKS */}
       <div className="forecast-results-container">
         {viewType === 'hourly' ? (
           <div className="forecast-card-wrapper">
             <h3 className="forecast-section-title">Hourly Metrics Track</h3>
             <div className="horizontal-scroll-viewport">
+              <div className="scroll-flex-track">
+                {hourlyDataset.map((node, idx) => (
+                  <div key={idx} className="forecast-column-node">
+                    <div>{node.time}</div><div style={{ fontSize: '20px' }}>{node.emoji}</div>
+                    <strong>{node.temp}</strong><div>{node.condition}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="daily-forecast-container">
+            <h3 className="daily-forecast-title">5-Day Predictive Matrix</h3>
+            <div className="daily-list-stack">
+              {dailyDataset.map((row, idx) => (
+                <div key={idx} className="forecast-row-item">
+                  <span>{row.day} {row.emoji} {row.condition}</span>
+                  <span>High: {row.high} / Low: {row.low}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {favorites.length > 0 && (
