@@ -128,7 +128,7 @@ const Home: React.FC = () => {
       setSearchQuery('');
       setLoading(false);
       localStorage.setItem('weather_cached_city', sanitized);
-      triggerNotificationMessage(`Displaying complete weather info for ${sanitized}`);
+      triggerNotificationMessage(`Loaded comprehensive real-time info for ${sanitized}`);
     }, 250);
   };
 
@@ -189,7 +189,6 @@ const Home: React.FC = () => {
     <div className={`main-page-wrapper theme-${appTheme}`}>
       {processNotification && <div className="permission-alert-banner">ℹ️ {processNotification}</div>}
 
-      {/* SEARCH FIELD BAR GROUP */}
       <div className="search-section-box">
         <form onSubmit={handleSearchSubmit} className="search-input-group">
           <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search for a city or airport" className="city-search-input" />
@@ -197,31 +196,28 @@ const Home: React.FC = () => {
         </form>
       </div>
 
-      {/* QUICK SWITCH INTERACTIVE SIDEBAR REGISTER MAP */}
       <div className="forecast-card-wrapper">
         <h3 className="forecast-section-title">Weather Portal Active Register</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div className="favorites-list-stack">
           {favorites.map((city) => (
             <div 
               key={city}
               onClick={() => { setCurrentCity(city); triggerNotificationMessage(`View targeted on ${city}`); }}
-              className="forecast-row-item" 
-              style={{ cursor: 'pointer', padding: '12px', borderRadius: '16px', background: currentCity === city ? 'rgba(44,62,80,0.1)' : 'transparent' }}
+              className="forecast-row-item clickable-favorite"
             >
               <div>
                 <strong>{city}</strong>
-                <div style={{ fontSize: '12px', color: '#8899aa' }}>18:23</div>
+                <div className="timestamp-sublabel">18:23</div>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{city === 'Pietermaritzburg' ? (displayUnit === 'C' ? '10°' : '50°') : (displayUnit === 'C' ? '15°' : '59°')}</span>
-                <div style={{ fontSize: '12px', color: '#8899aa' }}>Drizzle</div>
+              <div className="right-metrics-panel">
+                <span className="favorite-temp-readout">{city === 'Pietermaritzburg' ? (displayUnit === 'C' ? '10°' : '50°') : (displayUnit === 'C' ? '15°' : '59°')}</span>
+                <div className="favorite-cond-sublabel">Drizzle</div>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* CORE LOCATION METRICS HEADER CONTAINER VIEW */}
       <div className="weather-card-container">
         <div className="weather-card-header">
           <div>
@@ -230,5 +226,11 @@ const Home: React.FC = () => {
           </div>
           <span className="weather-visual-emoji">{weatherData.emoji}</span>
         </div>
-        
+        <div className="weather-card-body">
+          <div className="temperature-text">
+            {displayUnit === 'C' ? `${weatherData.tempC}°` : `${weatherData.tempF}°`}
+          </div>
+          <p className="high-low-sublabel">
+            H:{displayUnit === 'C' ? `${weatherData.highC}°` : `${weatherData.highF}°`} L:{displayUnit === 'C' ? `${weatherData.lowC}°` : `${weatherData.lowF}°`}
+    
       export default Home;
