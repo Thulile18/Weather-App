@@ -128,7 +128,7 @@ const Home: React.FC = () => {
       setSearchQuery('');
       setLoading(false);
       localStorage.setItem('weather_cached_city', sanitized);
-      triggerNotificationMessage(`Loaded comprehensive real-time info for ${sanitized}`);
+      triggerNotificationMessage(`Displaying complete weather info for ${sanitized}`);
     }, 250);
   };
 
@@ -232,5 +232,3 @@ const Home: React.FC = () => {
           </div>
           <p className="high-low-sublabel">
             H:{displayUnit === 'C' ? `${weatherData.highC}°` : `${weatherData.highF}°`} L:{displayUnit === 'C' ? `${weatherData.lowC}°` : `${weatherData.lowF}°`}
-    
-      export default Home;
