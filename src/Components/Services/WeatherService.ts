@@ -3,7 +3,7 @@ import type { WeatherData, ForecastData, HourlyForecast, DailyForecast } from '.
 import { API_CONFIG } from '../Utils/Constants.ts';
 
 // GLOBAL MOCK CONTROLLER - Set to true to ensure immediate reliable loading on Vercel
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 export class WeatherService {
   
