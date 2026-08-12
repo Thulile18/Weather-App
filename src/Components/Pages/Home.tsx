@@ -40,7 +40,7 @@ export const Home: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   
-  // Customisation & Persistence Settings with try/catch to prevent old cache crashes
+  // Persistence Settings with Try/Catch safety rings
   const [unit, setUnit] = useState<'C' | 'F'>(() => {
     const savedSettings = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
     if (savedSettings) {
@@ -71,7 +71,7 @@ export const Home: React.FC = () => {
     return [];
   });
 
-  // --- CORE PARSING FETCH ENGINE (COMPATIBLE ON ALL MOBILE BROWSERS) ---
+  // --- PARSING FETCH ENGINE (OPTIMIZED FOR MOBILE CORES & SAFARI) ---
   const fetchWeatherApi = async (paramString: string, isCoords: boolean = false) => {
     setLoading(true);
     setErrorMessage('');
@@ -91,15 +91,15 @@ export const Home: React.FC = () => {
       
       const data = await response.json();
       
-      // CRITICAL MOBILE SAFETY CHECK: Verify array presence before extracting fields
+      // CRITICAL DEVICE FIX: Ensure data list array exists before parsing values
       if (!data || !data.list || !Array.isArray(data.list) || data.list.length === 0) {
-        throw new Error('Invalid data format received from the weather station.');
+        throw new Error('Invalid data format received from the weather service.');
       }
       
-      // FIX: Extract index 0 from the forecast list array to represent current local time metrics
+      // FIX: Explicitly target the first element [0] of the forecast array for current data metrics
       const currentInfo = data.list[0];
 
-      // Format payload using safe optional chaining (?.) so missing values never crash mobile views
+      // Format payload using safe optional chaining and fallback text fields
       const formattedData: WeatherData = {
         city: data.city?.name || 'Current Location',
         temperature: currentInfo.main?.temp !== undefined ? Math.round(currentInfo.main.temp) : 0,
@@ -108,14 +108,14 @@ export const Home: React.FC = () => {
         condition: currentInfo.weather?.[0]?.main || 'Clear',
         iconCode: currentInfo.weather?.[0]?.icon || '01d',
         
-        // Grab immediate 4 forecasting time slots safely
+        // Slices next immediate 4 intervals (3-hour steps) for hourly chart timeline
         hourly: data.list.slice(0, 4).map((item: any) => ({
           time: new Date(item.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           temp: item.main?.temp !== undefined ? Math.round(item.main.temp) : 0,
           icon: item.weather?.[0]?.icon || '01d'
         })),
         
-        // Isolate distinctive mid-day blocks safely for micro layout rendering
+        // Filters midday intervals cleanly to isolate 4 distinct daily cards
         daily: data.list.filter((_: any, index: number) => index % 8 === 0).slice(0, 4).map((item: any) => ({
           day: new Date(item.dt * 1000).toLocaleDateString([], { weekday: 'long' }),
           temp: item.main?.temp !== undefined ? Math.round(item.main.temp) : 0,
@@ -129,9 +129,9 @@ export const Home: React.FC = () => {
       processSystemAlerts(formattedData);
 
     } catch (error: any) {
-      setErrorMessage(error.message || 'Failed to update live metrics.');
+      setErrorMessage(error.message || 'Failed to update weather conditions.');
       
-      // Offline fallback ensures a working UI if mobile network drops out completely
+      // Offline fallback prevents blank screens if device loses mobile data connection
       const cachedBackup = localStorage.getItem('weather_offline_cache');
       if (cachedBackup) {
         try {
@@ -143,7 +143,7 @@ export const Home: React.FC = () => {
     }
   };
 
-  // --- AUTOMATIC LIVE DEVICE ACCESSIBILITY ENGINE (Requirement 2.a) ---
+  // --- AUTOMATIC EXACT DEVICE GEOLOCATION INVERSION ENGINE ---
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -152,10 +152,11 @@ export const Home: React.FC = () => {
           fetchWeatherApi(coordinatesUrlParam, true);
         },
         (error) => {
-          console.warn("Location prompt dismissed. Reverting to structural fallback city.");
+          console.warn("Location prompt dismissed. Using default fallback city.");
           fetchWeatherApi('Cape Town'); 
         },
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 } // Fine-tuned settings for iOS Safari/iPhone stability
+        // Setup specialized tracking configuration profiles for iOS Safari stability
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 } 
       );
     } else {
       fetchWeatherApi('Cape Town');
@@ -167,10 +168,10 @@ export const Home: React.FC = () => {
     const customAlertTray: LocalAlert[] = [];
 
     if (data.temperature > 35) {
-      customAlertTray.push({ id: 'heat', type: 'Severe Heat Warning', message: 'Abnormally high temperature metrics. Stay fully hydrated.' });
+      customAlertTray.push({ id: 'heat', type: 'Severe Heat Warning', message: 'Abnormally high temperature metrics. Stay indoors and hydrated.' });
     }
     if (data.windSpeed > 30) {
-      customAlertTray.push({ id: 'wind', type: 'High Wind Advisory', message: 'Gale-force gusts present. Secure unanchored properties.' });
+      customAlertTray.push({ id: 'wind', type: 'High Wind Advisory', message: 'Gale-force gusts present. Secure outdoor property items.' });
     }
     if (data.humidity > 90) {
       customAlertTray.push({ id: 'humidity', type: 'Saturation Notice', message: 'Dense atmospheric moisture. Expect reduced road visibility.' });
@@ -257,3 +258,4 @@ export const Home: React.FC = () => {
         <form onSubmit={handleSearchClick} className="search-form-layout">
           <input
             type="text"
+            placeholder="Search city location..."
