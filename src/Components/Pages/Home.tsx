@@ -14,7 +14,6 @@ const STORAGE_KEYS = {
   USER_SETTINGS: 'weather_user_settings'
 };
 
-// Strict, explicit typing contracts for data structure mapping
 interface WeatherData {
   city: string;
   temperature: number; 
@@ -33,7 +32,7 @@ interface LocalAlert {
 }
 
 export const Home: React.FC = () => {
-  // --- APPLICATION STATE CHANNELS ---
+  // --- APPLICATION STATE ---
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [viewType, setViewType] = useState<'hourly' | 'daily'>('hourly');
@@ -41,7 +40,7 @@ export const Home: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   
-  // Safe initialization of client side storage nodes via classic parsing
+  // Safe local storage parsers
   const [unit, setUnit] = useState<'C' | 'F'>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
     if (saved) {
@@ -72,7 +71,7 @@ export const Home: React.FC = () => {
     return [];
   });
 
-  // --- COMPATIBLE NETWORK COMMUNICATION ENGINE ---
+  // --- BULLETPROOF NETWORK COMMUNICATION ENGINE ---
   const fetchWeatherApi = async (paramString: string, isCoords: boolean = false) => {
     setLoading(true);
     setErrorMessage('');
@@ -87,20 +86,20 @@ export const Home: React.FC = () => {
     try {
       const response = await fetch(endpoint);
       if (!response.ok) {
-        throw new Error('Target location could not be resolved by server.');
+        throw new Error('Location could not be resolved by the server.');
       }
       
       const data = await response.json();
       
-      // Structure verification to protect mobile runtimes from processing empty items
+      // Structure check to stop mobile engines from processing empty responses
       if (!data || !data.list || !Array.isArray(data.list) || data.list.length === 0) {
-        throw new Error('The weather station returned data in an invalid format.');
+        throw new Error('The weather service returned data in an invalid format.');
       }
       
-      // Target the first forecast item in the list array to extract current data metrics
+      // TARGET FIRST OBJECT: OpenWeatherMap forecast data lists array item 0
       const currentInfo = data.list[0];
 
-      // BULLETPROOF PARSING: Added deep property safeguards and nested array index tracking ([0])
+      // ABSOLUTE FIX: Safely targets the inner array [0] element of the 'weather' property
       const formattedData: WeatherData = {
         city: data.city && data.city.name ? data.city.name : 'Current Location',
         temperature: currentInfo.main && currentInfo.main.temp !== undefined ? Math.round(currentInfo.main.temp) : 0,
@@ -109,14 +108,14 @@ export const Home: React.FC = () => {
         condition: currentInfo.weather && currentInfo.weather[0] && currentInfo.weather[0].main ? currentInfo.weather[0].main : 'Clear',
         iconCode: currentInfo.weather && currentInfo.weather[0] && currentInfo.weather[0].icon ? currentInfo.weather[0].icon : '01d',
         
-        // Maps immediate 4 forecast updates safely
+        // Maps immediate 4 forecast updates safely using index targeting [0]
         hourly: data.list.slice(0, 4).map((item: any) => ({
           time: new Date(item.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           temp: item.main && item.main.temp !== undefined ? Math.round(item.main.temp) : 0,
           icon: item.weather && item.weather[0] && item.weather[0].icon ? item.weather[0].icon : '01d'
         })),
         
-        // Maps daily noon forecast entries safely
+        // Filters noon intervals safely (skipping every 8 items for distinct days)
         daily: data.list.filter((_: any, index: number) => index % 8 === 0).slice(0, 4).map((item: any) => ({
           day: new Date(item.dt * 1000).toLocaleDateString([], { weekday: 'long' }),
           temp: item.main && item.main.temp !== undefined ? Math.round(item.main.temp) : 0,
@@ -130,9 +129,9 @@ export const Home: React.FC = () => {
       processSystemAlerts(formattedData);
 
     } catch (error: any) {
-      setErrorMessage(error.message || 'Unable to load fresh weather parameters.');
+      setErrorMessage(error.message || 'Unable to load weather metrics.');
       
-      // Fallback cache instantly populates screen if a connection drops out
+      // Cache recovery prevents a blank screen if network completely cuts out
       const cachedBackup = localStorage.getItem('weather_offline_cache');
       if (cachedBackup) {
         try {
@@ -144,7 +143,7 @@ export const Home: React.FC = () => {
     }
   };
 
-  // --- EXACT HARDWARE GEOLOCATION HOOK ---
+  // --- LIVE DEVICE GEOLOCATION HOOK ---
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -153,10 +152,9 @@ export const Home: React.FC = () => {
           fetchWeatherApi(coordinatesUrlParam, true);
         },
         (error) => {
-          console.warn("Location services access rejected. Using default fallback city.");
+          console.warn("Location services access rejected. Using default city fallback.");
           fetchWeatherApi('Cape Town'); 
         },
-        // Maximum settings for high speed mobile device tracking handshake
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } 
       );
     } else {
@@ -164,7 +162,7 @@ export const Home: React.FC = () => {
     }
   }, []);
 
-  // --- AUTOMATED BACKGROUND THREAT CHECKER ---
+  // --- AUTOMATED BACKEND THREAT CHECKER ---
   const processSystemAlerts = (data: WeatherData) => {
     const customAlertTray: LocalAlert[] = [];
 
@@ -182,7 +180,7 @@ export const Home: React.FC = () => {
 
     if (customAlertTray.length > 0 && 'Notification' in window && Notification.permission === 'granted') {
       new Notification(`Weather Alert: ${data.city}`, {
-        body: customAlertTray[0].message,
+        body: customAlertTray.message,
         icon: `https://openweathermap.org{data.iconCode}.png`
       });
     }
@@ -194,7 +192,7 @@ export const Home: React.FC = () => {
     }
   }, []);
 
-  // --- USER MOUSE CLICKS ACTION HANDLERS ---
+  // --- USER MOUSE INTERACTION HANDLERS ---
   const handleSearchClick = (event: React.FormEvent) => {
     event.preventDefault();
     if (searchQuery.trim() !== '') {
@@ -249,3 +247,9 @@ export const Home: React.FC = () => {
           {alerts.map(alertObj => (
             <div key={alertObj.id} className="system-alert-card danger-level">
               <span><strong>⚠️ {alertObj.type}:</strong> {alertObj.message}</span>
+              <button onClick={() => setAlerts(prev => prev.filter(a => a.id !== alertObj.id))} className="dismiss-btn">✕</button>
+            </div>
+          ))}
+        </section>
+      )}
+
