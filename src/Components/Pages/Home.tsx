@@ -228,7 +228,7 @@ export const Home: React.FC = () => {
             Scale: °{unit}
           </button>
           <button onClick={handleThemeToggle} className="btn-toggle">
-            Mode: {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
+            Mode: {theme === 'light' ? ' Dark' : ' Light'}
           </button>
         </div>
       </header>
@@ -263,7 +263,7 @@ export const Home: React.FC = () => {
             <h2>
               {weather.city}
               <button onClick={handleBookmarkToggle} className="btn-bookmark">
-                {savedCities.includes(weather.city) ? '★ Bookmarked' : '☆ Bookmark'}
+                {savedCities.includes(weather.city) ? ' Bookmarked' : ' Bookmark'}
               </button>
             </h2>
             <div className="current-main">
