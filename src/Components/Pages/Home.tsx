@@ -40,7 +40,6 @@ export const Home: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   
-  // Safe local storage parsers
   const [unit, setUnit] = useState<'C' | 'F'>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
     if (saved) {
@@ -71,7 +70,7 @@ export const Home: React.FC = () => {
     return [];
   });
 
-  // --- BULLETPROOF NETWORK COMMUNICATION ENGINE ---
+  // --- NETWORK DATA PARSING ENGINE ---
   const fetchWeatherApi = async (paramString: string, isCoords: boolean = false) => {
     setLoading(true);
     setErrorMessage('');
@@ -86,20 +85,19 @@ export const Home: React.FC = () => {
     try {
       const response = await fetch(endpoint);
       if (!response.ok) {
-        throw new Error('Location could not be resolved by the server.');
+        throw new Error('Target city location could not be found.');
       }
       
       const data = await response.json();
       
-      // Structure check to stop mobile engines from processing empty responses
       if (!data || !data.list || !Array.isArray(data.list) || data.list.length === 0) {
-        throw new Error('The weather service returned data in an invalid format.');
+        throw new Error('Invalid weather payload response format.');
       }
       
-      // TARGET FIRST OBJECT: OpenWeatherMap forecast data lists array item 0
+      // Grab index 0 for current weather layout
       const currentInfo = data.list[0];
 
-      // ABSOLUTE FIX: Safely targets the inner array [0] element of the 'weather' property
+      // THE RESOLUTION: Extract condition and icon properties via index [0] of the weather array block
       const formattedData: WeatherData = {
         city: data.city && data.city.name ? data.city.name : 'Current Location',
         temperature: currentInfo.main && currentInfo.main.temp !== undefined ? Math.round(currentInfo.main.temp) : 0,
@@ -108,14 +106,14 @@ export const Home: React.FC = () => {
         condition: currentInfo.weather && currentInfo.weather[0] && currentInfo.weather[0].main ? currentInfo.weather[0].main : 'Clear',
         iconCode: currentInfo.weather && currentInfo.weather[0] && currentInfo.weather[0].icon ? currentInfo.weather[0].icon : '01d',
         
-        // Maps immediate 4 forecast updates safely using index targeting [0]
+        // Maps immediate 4 forecast updates safely
         hourly: data.list.slice(0, 4).map((item: any) => ({
           time: new Date(item.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           temp: item.main && item.main.temp !== undefined ? Math.round(item.main.temp) : 0,
           icon: item.weather && item.weather[0] && item.weather[0].icon ? item.weather[0].icon : '01d'
         })),
         
-        // Filters noon intervals safely (skipping every 8 items for distinct days)
+        // Maps daily noon forecast entries safely
         daily: data.list.filter((_: any, index: number) => index % 8 === 0).slice(0, 4).map((item: any) => ({
           day: new Date(item.dt * 1000).toLocaleDateString([], { weekday: 'long' }),
           temp: item.main && item.main.temp !== undefined ? Math.round(item.main.temp) : 0,
@@ -131,7 +129,6 @@ export const Home: React.FC = () => {
     } catch (error: any) {
       setErrorMessage(error.message || 'Unable to load weather metrics.');
       
-      // Cache recovery prevents a blank screen if network completely cuts out
       const cachedBackup = localStorage.getItem('weather_offline_cache');
       if (cachedBackup) {
         try {
@@ -143,7 +140,7 @@ export const Home: React.FC = () => {
     }
   };
 
-  // --- LIVE DEVICE GEOLOCATION HOOK ---
+  // --- AUTOMATIC EXACT DEVICE GEOLOCATION HOOK ---
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -152,7 +149,7 @@ export const Home: React.FC = () => {
           fetchWeatherApi(coordinatesUrlParam, true);
         },
         (error) => {
-          console.warn("Location services access rejected. Using default city fallback.");
+          console.warn("Location services access rejected. Using fallback city.");
           fetchWeatherApi('Cape Town'); 
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } 
@@ -162,7 +159,7 @@ export const Home: React.FC = () => {
     }
   }, []);
 
-  // --- AUTOMATED BACKEND THREAT CHECKER ---
+  // --- METRIC SYSTEM ALERTS ENGINE ---
   const processSystemAlerts = (data: WeatherData) => {
     const customAlertTray: LocalAlert[] = [];
 
@@ -192,7 +189,7 @@ export const Home: React.FC = () => {
     }
   }, []);
 
-  // --- USER MOUSE INTERACTION HANDLERS ---
+  // --- USER INTERACTION HANDLERS ---
   const handleSearchClick = (event: React.FormEvent) => {
     event.preventDefault();
     if (searchQuery.trim() !== '') {
@@ -253,3 +250,10 @@ export const Home: React.FC = () => {
         </section>
       )}
 
+      <section className="search-management-section">
+        <form onSubmit={handleSearchClick} className="search-form-layout">
+          <input
+            type="text"
+            placeholder="Search city location..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
