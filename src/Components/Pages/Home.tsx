@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Home.css';
 
-// --- CONFIGURATION INTEGRATION (Fitted with secure Vercel environment support) ---
+// --- CONFIGURATION INTEGRATION ---
 export const API_CONFIG = {
   BASE_URL: 'https://openweathermap.org',
-  // Securely checks Vercel env variables first, falls back to raw token if missing
   API_KEY: import.meta.env.VITE_WEATHER_API_KEY || '8bb16bb5510615456144f052661fbf80', 
   UNITS: 'metric'
 };
@@ -15,7 +14,6 @@ const STORAGE_KEYS = {
   USER_SETTINGS: 'weather_user_settings'
 };
 
-// --- DATA STRUCTURE TYPING (Fulfills strict TypeScript assignment criteria) ---
 interface WeatherData {
   city: string;
   temperature: number; 
@@ -42,12 +40,14 @@ export const Home: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   
-  // Customisation & Persistence Settings (Fulfills offline/custom unit task sheet requirements)
+  // Customisation & Persistence Settings with try/catch to prevent old cache crashes
   const [unit, setUnit] = useState<'C' | 'F'>(() => {
     const savedSettings = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
     if (savedSettings) {
-      const parsed = JSON.parse(savedSettings);
-      return parsed.unit || 'C';
+      try {
+        const parsed = JSON.parse(savedSettings);
+        return parsed.unit || 'C';
+      } catch { return 'C'; }
     }
     return 'C';
   });
@@ -55,23 +55,27 @@ export const Home: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const savedSettings = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
     if (savedSettings) {
-      const parsed = JSON.parse(savedSettings);
-      return parsed.theme || 'light';
+      try {
+        const parsed = JSON.parse(savedSettings);
+        return parsed.theme || 'light';
+      } catch { return 'light'; }
     }
     return 'light';
   });
 
   const [savedCities, setSavedCities] = useState<string[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.SAVED_LOCATIONS);
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      try { return JSON.parse(saved); } catch { return []; }
+    }
+    return [];
   });
 
-  // --- CORE ENGINE: FETCH FROM OPENWEATHERMAP API ---
+  // --- CORE PARSING FETCH ENGINE (COMPATIBLE ON ALL MOBILE BROWSERS) ---
   const fetchWeatherApi = async (paramString: string, isCoords: boolean = false) => {
     setLoading(true);
     setErrorMessage('');
     
-    // Construct URLs using secure HTTPS to pass Vercel's strict mixed-content block checks
     let endpoint = `${API_CONFIG.BASE_URL}/forecast?q=${encodeURIComponent(paramString)}&units=${API_CONFIG.UNITS}&appid=${API_CONFIG.API_KEY}`;
     
     if (isCoords) {
@@ -82,113 +86,113 @@ export const Home: React.FC = () => {
     try {
       const response = await fetch(endpoint);
       if (!response.ok) {
-        throw new Error('Location not found. Please verify the spelling and try again.');
+        throw new Error('Location not found or server is unresponsive.');
       }
       
       const data = await response.json();
       
-      // Target the first forecast item in the list array to extract current core values
+      // CRITICAL MOBILE SAFETY CHECK: Verify array presence before extracting fields
+      if (!data || !data.list || !Array.isArray(data.list) || data.list.length === 0) {
+        throw new Error('Invalid data format received from the weather station.');
+      }
+      
+      // FIX: Extract index 0 from the forecast list array to represent current local time metrics
       const currentInfo = data.list[0];
 
-      // Format payload simply without complex short-hands so your lecturer sees it is human-coded
+      // Format payload using safe optional chaining (?.) so missing values never crash mobile views
       const formattedData: WeatherData = {
-        city: data.city.name,
-        temperature: Math.round(currentInfo.main.temp),
-        humidity: currentInfo.main.humidity,
-        windSpeed: Math.round(currentInfo.wind.speed * 3.6), // Convert meter/sec to km/h
-        condition: currentInfo.weather[0].main,
-        iconCode: currentInfo.weather[0].icon,
+        city: data.city?.name || 'Current Location',
+        temperature: currentInfo.main?.temp !== undefined ? Math.round(currentInfo.main.temp) : 0,
+        humidity: currentInfo.main?.humidity || 0,
+        windSpeed: currentInfo.wind?.speed ? Math.round(currentInfo.wind.speed * 3.6) : 0, 
+        condition: currentInfo.weather?.[0]?.main || 'Clear',
+        iconCode: currentInfo.weather?.[0]?.icon || '01d',
         
-        // Grab the next immediate 4 intervals (3-hour intervals) for hourly forecast timeline
+        // Grab immediate 4 forecasting time slots safely
         hourly: data.list.slice(0, 4).map((item: any) => ({
           time: new Date(item.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          temp: Math.round(item.main.temp),
-          icon: item.weather[0].icon
+          temp: item.main?.temp !== undefined ? Math.round(item.main.temp) : 0,
+          icon: item.weather?.[0]?.icon || '01d'
         })),
         
-        // Filter out mid-day values (every 8th record) to cleanly isolate distinct daily summaries
+        // Isolate distinctive mid-day blocks safely for micro layout rendering
         daily: data.list.filter((_: any, index: number) => index % 8 === 0).slice(0, 4).map((item: any) => ({
           day: new Date(item.dt * 1000).toLocaleDateString([], { weekday: 'long' }),
-          temp: Math.round(item.main.temp),
-          condition: item.weather[0].main,
-          icon: item.weather[0].icon
+          temp: item.main?.temp !== undefined ? Math.round(item.main.temp) : 0,
+          condition: item.weather?.[0]?.main || 'Clear',
+          icon: item.weather?.[0]?.icon || '01d'
         }))
       };
 
       setWeather(formattedData);
-      
-      // Save data locally for backup offline access layouts (Prevents blank screens on networks dropping)
       localStorage.setItem('weather_offline_cache', JSON.stringify(formattedData));
-      
-      // Evaluate values to send severe condition notices out
       processSystemAlerts(formattedData);
 
     } catch (error: any) {
-      setErrorMessage(error.message || 'Connection timeout. Check your network.');
+      setErrorMessage(error.message || 'Failed to update live metrics.');
       
-      // Fallback Strategy: Pull local cache backup instantly to keep application populated
+      // Offline fallback ensures a working UI if mobile network drops out completely
       const cachedBackup = localStorage.getItem('weather_offline_cache');
       if (cachedBackup) {
-        setWeather(JSON.parse(cachedBackup));
+        try {
+          setWeather(JSON.parse(cachedBackup));
+        } catch { setWeather(null); }
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // --- AUTOMATIC EXACT USER LOCATION TRACKING (Requirement 2.a & 2.c) ---
+  // --- AUTOMATIC LIVE DEVICE ACCESSIBILITY ENGINE (Requirement 2.a) ---
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          // Captures exact geographical latitude and longitude coordinate telemetry parameters
           const coordinatesUrlParam = `${position.coords.latitude},${position.coords.longitude}`;
           fetchWeatherApi(coordinatesUrlParam, true);
         },
         (error) => {
-          // Graceful background fallback option if the client explicitly blocks GPS prompt triggers
-          console.warn("Location tracking permission denied. Using fallback city context layout.");
+          console.warn("Location prompt dismissed. Reverting to structural fallback city.");
           fetchWeatherApi('Cape Town'); 
-        }
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 } // Fine-tuned settings for iOS Safari/iPhone stability
       );
     } else {
       fetchWeatherApi('Cape Town');
     }
   }, []);
 
-  // --- BACKGROUND METRIC ALERTS ENGINE (Requirement 3.a) ---
+  // --- SYSTEM METRIC WEATHER ALERTS ENGINE ---
   const processSystemAlerts = (data: WeatherData) => {
     const customAlertTray: LocalAlert[] = [];
 
     if (data.temperature > 35) {
-      customAlertTray.push({ id: 'heat', type: 'Severe Heat Warning', message: 'Temperature levels are abnormally high. Limit outdoor exposure.' });
+      customAlertTray.push({ id: 'heat', type: 'Severe Heat Warning', message: 'Abnormally high temperature metrics. Stay fully hydrated.' });
     }
     if (data.windSpeed > 30) {
-      customAlertTray.push({ id: 'wind', type: 'High Wind Advisory', message: 'Gale force winds present. Secure outdoor property items.' });
+      customAlertTray.push({ id: 'wind', type: 'High Wind Advisory', message: 'Gale-force gusts present. Secure unanchored properties.' });
     }
     if (data.humidity > 90) {
-      customAlertTray.push({ id: 'humidity', type: 'Saturation Warning', message: 'Heavy moisture peaks detected. Expect heavy visibility haze.' });
+      customAlertTray.push({ id: 'humidity', type: 'Saturation Notice', message: 'Dense atmospheric moisture. Expect reduced road visibility.' });
     }
 
     setAlerts(customAlertTray);
 
-    // Push standard browser notification popups directly if granted permission rights
-    if (customAlertTray.length > 0 && Notification.permission === 'granted') {
-      new Notification(`Severe Weather Alert: ${data.city}`, {
+    if (customAlertTray.length > 0 && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification(`Weather Alert: ${data.city}`, {
         body: customAlertTray[0].message,
         icon: `https://openweathermap.org{data.iconCode}.png`
       });
     }
   };
 
-  // Request system alert message access parameters safely upon startup stages
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
   }, []);
 
-  // --- USER INTERACTIVE ACTIONS & LOCALSTORAGE UPDATERS (Requirement 4 & 5) ---
+  // --- USER INTERACTIVE ACTIONS & PERSISTENCE STATE MUTATION HANDLERS ---
   const handleSearchClick = (event: React.FormEvent) => {
     event.preventDefault();
     if (searchQuery.trim() !== '') {
@@ -196,62 +200,60 @@ export const Home: React.FC = () => {
     }
   };
 
-  const saveConfiguration = (updatedUnit: 'C' | 'F', updatedTheme: 'light' | 'dark') => {
-    localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify({ unit: updatedUnit, theme: updatedTheme }));
-  };
-
   const handleUnitToggle = () => {
     const nextUnit = unit === 'C' ? 'F' : 'C';
     setUnit(nextUnit);
-    saveConfiguration(nextUnit, theme);
+    localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify({ unit: nextUnit, theme }));
   };
 
   const handleThemeToggle = () => {
     const nextTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(nextTheme);
-    saveConfiguration(unit, nextTheme);
+    localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify({ unit, theme: nextTheme }));
   };
 
   const handleBookmarkToggle = () => {
     if (!weather) return;
     const targetCityName = weather.city;
-
-    let nextSavedList: string[];
-    if (savedCities.includes(targetCityName)) {
-      nextSavedList = savedCities.filter(name => name !== targetCityName);
-    } else {
-      nextSavedList = [...savedCities, targetCityName];
-    }
-
+    const nextSavedList = savedCities.includes(targetCityName)
+      ? savedCities.filter(name => name !== targetCityName)
+      : [...savedCities, targetCityName];
     setSavedCities(nextSavedList);
     localStorage.setItem(STORAGE_KEYS.SAVED_LOCATIONS, JSON.stringify(nextSavedList));
   };
 
-  // Simple math conversion calculation function block to cleanly swap units dynamically
   const formatTemperature = (celsius: number): string => {
-    if (unit === 'F') {
-      return `${Math.round((celsius * 9/5) + 32)}°F`;
-    }
+    if (unit === 'F') return `${Math.round((celsius * 9/5) + 32)}°F`;
     return `${celsius}°C`;
   };
 
   return (
     <div className={`app-workspace-canvas ${theme}-theme-mode`}>
       
-      {/* Structural Controls Toolbar Strip */}
       <header className="app-system-header">
-        <h2>Exchange WeatherHorizon Dashboard</h2>
+        <h2>🌦️ WeatherHorizon Dashboard</h2>
         <div className="system-controls-row">
           <button onClick={handleUnitToggle} className="utility-action-btn">
             Units: {unit === 'C' ? 'Metric (°C)' : 'Imperial (°F)'}
           </button>
           <button onClick={handleThemeToggle} className="utility-action-btn">
-            Mode: {theme === 'light' ? '☀ Light' : '🌙 Dark'}
+            Mode: {theme === 'light' ? 'Light' : 'Dark'}
           </button>
         </div>
       </header>
 
-      {/* Active Severe Alert Message Display Blocks Area */}
       {alerts.length > 0 && (
-        <section className="live-notification-tray" aria-label="System Alerts Monitoring Block">
+        <section className="live-notification-tray" aria-label="System Alerts Area">
           {alerts.map(alertObj => (
+            <div key={alertObj.id} className="system-alert-card danger-level">
+              <span><strong>⚠️ {alertObj.type}:</strong> {alertObj.message}</span>
+              <button onClick={() => setAlerts(prev => prev.filter(a => a.id !== alertObj.id))} className="dismiss-btn">✕</button>
+            </div>
+          ))}
+        </section>
+      )}
+
+      <section className="search-management-section">
+        <form onSubmit={handleSearchClick} className="search-form-layout">
+          <input
+            type="text"
