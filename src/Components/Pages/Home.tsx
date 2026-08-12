@@ -94,10 +94,10 @@ export const Home: React.FC = () => {
         throw new Error('Invalid weather payload response format.');
       }
       
-      // Grab index 0 for current weather layout
+      // Grab index 0 for current weather layout parameters
       const currentInfo = data.list[0];
 
-      // THE RESOLUTION: Extract condition and icon properties via index [0] of the weather array block
+      // ABSOLUTE FIX: Safely reads the array index [0] for weather condition lists
       const formattedData: WeatherData = {
         city: data.city && data.city.name ? data.city.name : 'Current Location',
         temperature: currentInfo.main && currentInfo.main.temp !== undefined ? Math.round(currentInfo.main.temp) : 0,
@@ -106,14 +106,14 @@ export const Home: React.FC = () => {
         condition: currentInfo.weather && currentInfo.weather[0] && currentInfo.weather[0].main ? currentInfo.weather[0].main : 'Clear',
         iconCode: currentInfo.weather && currentInfo.weather[0] && currentInfo.weather[0].icon ? currentInfo.weather[0].icon : '01d',
         
-        // Maps immediate 4 forecast updates safely
+        // Maps immediate 4 forecast updates safely using weather index 0
         hourly: data.list.slice(0, 4).map((item: any) => ({
           time: new Date(item.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           temp: item.main && item.main.temp !== undefined ? Math.round(item.main.temp) : 0,
           icon: item.weather && item.weather[0] && item.weather[0].icon ? item.weather[0].icon : '01d'
         })),
         
-        // Maps daily noon forecast entries safely
+        // Maps daily noon forecast entries safely using weather index 0
         daily: data.list.filter((_: any, index: number) => index % 8 === 0).slice(0, 4).map((item: any) => ({
           day: new Date(item.dt * 1000).toLocaleDateString([], { weekday: 'long' }),
           temp: item.main && item.main.temp !== undefined ? Math.round(item.main.temp) : 0,
@@ -149,7 +149,7 @@ export const Home: React.FC = () => {
           fetchWeatherApi(coordinatesUrlParam, true);
         },
         (error) => {
-          console.warn("Location services access rejected. Using fallback city.");
+          console.warn("Location services access rejected. Using default fallback city.");
           fetchWeatherApi('Cape Town'); 
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } 
@@ -256,4 +256,3 @@ export const Home: React.FC = () => {
             type="text"
             placeholder="Search city location..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
