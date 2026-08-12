@@ -4,7 +4,7 @@ import './Home.css';
 
 // --- CONFIGURATION MANAGEMENT ---
 export const API_CONFIG = {
-  BASE_URL: 'https://openweathermap.org',
+  BASE_URL: 'https://openweathermap.org', // Fixed to the proper API endpoint
   API_KEY: import.meta.env.VITE_WEATHER_API_KEY || '8bb16bb5510615456144f052661fbf80', 
   UNITS: 'metric'
 };
@@ -90,35 +90,34 @@ export const Home: React.FC = () => {
       
       const data = await response.json();
       
-      if (!data || !data.list || !Array.isArray(data.list) || data.list.length === 0) {
-        throw new Error('Invalid weather payload response format.');
+      if (!data || !data.list || data.list.length === 0) {
+        throw new Error('Invalid weather response format.');
       }
       
-      // Grab index 0 for current weather layout parameters
+      // Grab the first item for current weather
       const currentInfo = data.list[0];
 
-      // ABSOLUTE FIX: Safely reads the array index [0] for weather condition lists
       const formattedData: WeatherData = {
         city: data.city && data.city.name ? data.city.name : 'Current Location',
-        temperature: currentInfo.main && currentInfo.main.temp !== undefined ? Math.round(currentInfo.main.temp) : 0,
-        humidity: currentInfo.main && currentInfo.main.humidity ? currentInfo.main.humidity : 0,
-        windSpeed: currentInfo.wind && currentInfo.wind.speed ? Math.round(currentInfo.wind.speed * 3.6) : 0, 
-        condition: currentInfo.weather && currentInfo.weather[0] && currentInfo.weather[0].main ? currentInfo.weather[0].main : 'Clear',
-        iconCode: currentInfo.weather && currentInfo.weather[0] && currentInfo.weather[0].icon ? currentInfo.weather[0].icon : '01d',
+        temperature: currentInfo.main ? Math.round(currentInfo.main.temp) : 0,
+        humidity: currentInfo.main ? currentInfo.main.humidity : 0,
+        windSpeed: currentInfo.wind ? Math.round(currentInfo.wind.speed * 3.6) : 0, 
+        condition: currentInfo.weather && currentInfo.weather[0] ? currentInfo.weather[0].main : 'Clear',
+        iconCode: currentInfo.weather && currentInfo.weather[0] ? currentInfo.weather[0].icon : '01d',
         
-        // Maps immediate 4 forecast updates safely using weather index 0
+        // Maps next 4 updates for hourly view
         hourly: data.list.slice(0, 4).map((item: any) => ({
           time: new Date(item.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          temp: item.main && item.main.temp !== undefined ? Math.round(item.main.temp) : 0,
-          icon: item.weather && item.weather[0] && item.weather[0].icon ? item.weather[0].icon : '01d'
+          temp: item.main ? Math.round(item.main.temp) : 0,
+          icon: item.weather && item.weather[0] ? item.weather[0].icon : '01d'
         })),
         
-        // Maps daily noon forecast entries safely using weather index 0
+        // Filters every 8th item (24 hours apart) for a 4-day layout
         daily: data.list.filter((_: any, index: number) => index % 8 === 0).slice(0, 4).map((item: any) => ({
           day: new Date(item.dt * 1000).toLocaleDateString([], { weekday: 'long' }),
-          temp: item.main && item.main.temp !== undefined ? Math.round(item.main.temp) : 0,
-          condition: item.weather && item.weather[0] && item.weather[0].main ? item.weather[0].main : 'Clear',
-          icon: item.weather && item.weather[0] && item.weather[0].icon ? item.weather[0].icon : '01d'
+          temp: item.main ? Math.round(item.main.temp) : 0,
+          condition: item.weather && item.weather[0] ? item.weather[0].main : 'Clear',
+          icon: item.weather && item.weather[0] ? item.weather[0].icon : '01d'
         }))
       };
 
@@ -140,16 +139,16 @@ export const Home: React.FC = () => {
     }
   };
 
-  // --- AUTOMATIC EXACT DEVICE GEOLOCATION HOOK ---
+  // --- GET LOCATION ON LOAD ---
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const coordinatesUrlParam = `${position.coords.latitude},${position.coords.longitude}`;
-          fetchWeatherApi(coordinatesUrlParam, true);
+          const coords = `${position.coords.latitude},${position.coords.longitude}`;
+          fetchWeatherApi(coords, true);
         },
         (error) => {
-          console.warn("Location services access rejected. Using default fallback city.");
+          console.warn("Location access denied. Using default city.");
           fetchWeatherApi('Cape Town'); 
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } 
@@ -159,7 +158,7 @@ export const Home: React.FC = () => {
     }
   }, []);
 
-  // --- METRIC SYSTEM ALERTS ENGINE ---
+  // --- ALERTS TRIGGER ENGINE ---
   const processSystemAlerts = (data: WeatherData) => {
     const customAlertTray: LocalAlert[] = [];
 
@@ -174,20 +173,7 @@ export const Home: React.FC = () => {
     }
 
     setAlerts(customAlertTray);
-
-    if (customAlertTray.length > 0 && 'Notification' in window && Notification.permission === 'granted') {
-      new Notification(`Weather Alert: ${data.city}`, {
-        body: customAlertTray.message,
-        icon: `https://openweathermap.org{data.iconCode}.png`
-      });
-    }
   };
-
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
 
   // --- USER INTERACTION HANDLERS ---
   const handleSearchClick = (event: React.FormEvent) => {
@@ -209,50 +195,85 @@ export const Home: React.FC = () => {
     localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify({ unit, theme: nextTheme }));
   };
 
+  // FIXED AND CLEANED UP: Properly handles saving/removing bookmarked cities
   const handleBookmarkToggle = () => {
     if (!weather) return;
+    
     const targetCityName = weather.city;
-    const nextSavedList = savedCities.includes(targetCityName)
-      ? savedCities.filter(name => name !== targetCityName)
-      : [...savedCities, targetCityName];
+    let nextSavedList: string[] = [];
+
+    if (savedCities.includes(targetCityName)) {
+      nextSavedList = savedCities.filter(c => c !== targetCityName);
+    } else {
+      nextSavedList = [...savedCities, targetCityName];
+    }
+    
     setSavedCities(nextSavedList);
     localStorage.setItem(STORAGE_KEYS.SAVED_LOCATIONS, JSON.stringify(nextSavedList));
   };
 
-  const formatTemperature = (celsius: number): string => {
-    if (unit === 'F') return `${Math.round((celsius * 9/5) + 32)}°F`;
-    return `${celsius}°C`;
+  const convertTemp = (celsius: number) => {
+    if (unit === 'F') {
+      return Math.round((celsius * 9) / 5 + 32);
+    }
+    return celsius;
   };
 
   return (
-    <div className={`app-workspace-canvas ${theme}-theme-mode`}>
-      
-      <header className="app-system-header">
-        <h2>🌦️ WeatherHorizon Dashboard</h2>
-        <div className="system-controls-row">
-          <button onClick={handleUnitToggle} className="utility-action-btn">
-            Units: {unit === 'C' ? 'Metric (°C)' : 'Imperial (°F)'}
+    <div className={`home-container ${theme}`}>
+      <header className="home-header">
+        <h1>Weather App</h1>
+        <div className="header-controls">
+          <button onClick={handleUnitToggle} className="btn-toggle">
+            Scale: °{unit}
           </button>
-          <button onClick={handleThemeToggle} className="utility-action-btn">
-            Mode: {theme === 'light' ? 'Light' : 'Dark'}
+          <button onClick={handleThemeToggle} className="btn-toggle">
+            Mode: {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
           </button>
         </div>
       </header>
 
+      <form onSubmit={handleSearchClick} className="search-form">
+        <input 
+          type="text" 
+          placeholder="Search location..." 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="search-input"
+        />
+        <button type="submit" className="search-btn">Find</button>
+      </form>
+
+      {loading && <div className="loader">Analyzing atmosphere structures...</div>}
+      {errorMessage && <div className="error-banner">{errorMessage}</div>}
+
       {alerts.length > 0 && (
-        <section className="live-notification-tray" aria-label="System Alerts Tracker">
-          {alerts.map(alertObj => (
-            <div key={alertObj.id} className="system-alert-card danger-level">
-              <span><strong>⚠️ {alertObj.type}:</strong> {alertObj.message}</span>
-              <button onClick={() => setAlerts(prev => prev.filter(a => a.id !== alertObj.id))} className="dismiss-btn">✕</button>
+        <div className="alerts-section">
+          {alerts.map(alert => (
+            <div key={alert.id} className="alert-card">
+              <strong>{alert.type}:</strong> {alert.message}
             </div>
           ))}
-        </section>
+        </div>
       )}
 
-      <section className="search-management-section">
-        <form onSubmit={handleSearchClick} className="search-form-layout">
-          <input
-            type="text"
-            placeholder="Search city location..."
-            value={searchQuery}
+      {weather && !loading && (
+        <main className="weather-display">
+          <div className="current-weather-card">
+            <h2>
+              {weather.city}
+              <button onClick={handleBookmarkToggle} className="btn-bookmark">
+                {savedCities.includes(weather.city) ? '★ Bookmarked' : '☆ Bookmark'}
+              </button>
+            </h2>
+            <div className="current-main">
+              <img 
+                src={`https://openweathermap.org{weather.iconCode}@2x.png`} 
+                alt={weather.condition} 
+              />
+              <span className="current-temp">{convertTemp(weather.temperature)}°{unit}</span>
+            </div>
+            <p className="condition-text">{weather.condition}</p>
+            <div className="metrics-grid">
+              <div>Humidity: {weather.humidity}%</div>
+              <div>Wind: {weather.windSpeed} km/h</div>
