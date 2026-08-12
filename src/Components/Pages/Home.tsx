@@ -4,7 +4,7 @@ import './Home.css';
 // --- CONFIGURATION MANAGEMENT ---
 export const API_CONFIG = {
   BASE_URL: 'https://openweathermap.org',
-  API_KEY: import.meta.env.VITE_WEATHER_API_KEY || '8bb16bb5510615456144f052661fbf80', 
+  API_KEY: VITE_WEATHER_API_KEY || '8bb16bb5510615456144f052661fbf80', 
   UNITS: 'metric'
 };
 
