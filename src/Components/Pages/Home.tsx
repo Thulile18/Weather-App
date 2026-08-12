@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Home.css';
 
-// --- CONFIGURATION INTEGRATION ---
+// --- CONFIGURATION MANAGEMENT ---
 export const API_CONFIG = {
   BASE_URL: 'https://openweathermap.org',
   API_KEY: import.meta.env.VITE_WEATHER_API_KEY || '8bb16bb5510615456144f052661fbf80', 
@@ -14,6 +14,7 @@ const STORAGE_KEYS = {
   USER_SETTINGS: 'weather_user_settings'
 };
 
+// Strict, explicit typing contracts for data structure mapping
 interface WeatherData {
   city: string;
   temperature: number; 
@@ -32,7 +33,7 @@ interface LocalAlert {
 }
 
 export const Home: React.FC = () => {
-  // --- STATE DECLARATIONS ---
+  // --- APPLICATION STATE CHANNELS ---
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [viewType, setViewType] = useState<'hourly' | 'daily'>('hourly');
@@ -40,12 +41,12 @@ export const Home: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   
-  // Persistence Settings with Try/Catch safety rings
+  // Safe initialization of client side storage nodes via classic parsing
   const [unit, setUnit] = useState<'C' | 'F'>(() => {
-    const savedSettings = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
-    if (savedSettings) {
+    const saved = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
+    if (saved) {
       try {
-        const parsed = JSON.parse(savedSettings);
+        const parsed = JSON.parse(saved);
         return parsed.unit || 'C';
       } catch { return 'C'; }
     }
@@ -53,10 +54,10 @@ export const Home: React.FC = () => {
   });
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const savedSettings = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
-    if (savedSettings) {
+    const saved = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
+    if (saved) {
       try {
-        const parsed = JSON.parse(savedSettings);
+        const parsed = JSON.parse(saved);
         return parsed.theme || 'light';
       } catch { return 'light'; }
     }
@@ -71,7 +72,7 @@ export const Home: React.FC = () => {
     return [];
   });
 
-  // --- PARSING FETCH ENGINE (OPTIMIZED FOR MOBILE CORES & SAFARI) ---
+  // --- COMPATIBLE NETWORK COMMUNICATION ENGINE ---
   const fetchWeatherApi = async (paramString: string, isCoords: boolean = false) => {
     setLoading(true);
     setErrorMessage('');
@@ -86,41 +87,41 @@ export const Home: React.FC = () => {
     try {
       const response = await fetch(endpoint);
       if (!response.ok) {
-        throw new Error('Location not found or server is unresponsive.');
+        throw new Error('Target location could not be resolved by server.');
       }
       
       const data = await response.json();
       
-      // CRITICAL DEVICE FIX: Ensure data list array exists before parsing values
+      // Structure verification to protect mobile runtimes from processing empty items
       if (!data || !data.list || !Array.isArray(data.list) || data.list.length === 0) {
-        throw new Error('Invalid data format received from the weather service.');
+        throw new Error('The weather station returned data in an invalid format.');
       }
       
-      // FIX: Explicitly target the first element [0] of the forecast array for current data metrics
+      // Target the first forecast item in the list array to extract current data metrics
       const currentInfo = data.list[0];
 
-      // Format payload using safe optional chaining and fallback text fields
+      // BULLETPROOF PARSING: Added deep property safeguards and nested array index tracking ([0])
       const formattedData: WeatherData = {
-        city: data.city?.name || 'Current Location',
-        temperature: currentInfo.main?.temp !== undefined ? Math.round(currentInfo.main.temp) : 0,
-        humidity: currentInfo.main?.humidity || 0,
-        windSpeed: currentInfo.wind?.speed ? Math.round(currentInfo.wind.speed * 3.6) : 0, 
-        condition: currentInfo.weather?.[0]?.main || 'Clear',
-        iconCode: currentInfo.weather?.[0]?.icon || '01d',
+        city: data.city && data.city.name ? data.city.name : 'Current Location',
+        temperature: currentInfo.main && currentInfo.main.temp !== undefined ? Math.round(currentInfo.main.temp) : 0,
+        humidity: currentInfo.main && currentInfo.main.humidity ? currentInfo.main.humidity : 0,
+        windSpeed: currentInfo.wind && currentInfo.wind.speed ? Math.round(currentInfo.wind.speed * 3.6) : 0, 
+        condition: currentInfo.weather && currentInfo.weather[0] && currentInfo.weather[0].main ? currentInfo.weather[0].main : 'Clear',
+        iconCode: currentInfo.weather && currentInfo.weather[0] && currentInfo.weather[0].icon ? currentInfo.weather[0].icon : '01d',
         
-        // Slices next immediate 4 intervals (3-hour steps) for hourly chart timeline
+        // Maps immediate 4 forecast updates safely
         hourly: data.list.slice(0, 4).map((item: any) => ({
           time: new Date(item.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          temp: item.main?.temp !== undefined ? Math.round(item.main.temp) : 0,
-          icon: item.weather?.[0]?.icon || '01d'
+          temp: item.main && item.main.temp !== undefined ? Math.round(item.main.temp) : 0,
+          icon: item.weather && item.weather[0] && item.weather[0].icon ? item.weather[0].icon : '01d'
         })),
         
-        // Filters midday intervals cleanly to isolate 4 distinct daily cards
+        // Maps daily noon forecast entries safely
         daily: data.list.filter((_: any, index: number) => index % 8 === 0).slice(0, 4).map((item: any) => ({
           day: new Date(item.dt * 1000).toLocaleDateString([], { weekday: 'long' }),
-          temp: item.main?.temp !== undefined ? Math.round(item.main.temp) : 0,
-          condition: item.weather?.[0]?.main || 'Clear',
-          icon: item.weather?.[0]?.icon || '01d'
+          temp: item.main && item.main.temp !== undefined ? Math.round(item.main.temp) : 0,
+          condition: item.weather && item.weather[0] && item.weather[0].main ? item.weather[0].main : 'Clear',
+          icon: item.weather && item.weather[0] && item.weather[0].icon ? item.weather[0].icon : '01d'
         }))
       };
 
@@ -129,9 +130,9 @@ export const Home: React.FC = () => {
       processSystemAlerts(formattedData);
 
     } catch (error: any) {
-      setErrorMessage(error.message || 'Failed to update weather conditions.');
+      setErrorMessage(error.message || 'Unable to load fresh weather parameters.');
       
-      // Offline fallback prevents blank screens if device loses mobile data connection
+      // Fallback cache instantly populates screen if a connection drops out
       const cachedBackup = localStorage.getItem('weather_offline_cache');
       if (cachedBackup) {
         try {
@@ -143,7 +144,7 @@ export const Home: React.FC = () => {
     }
   };
 
-  // --- AUTOMATIC EXACT DEVICE GEOLOCATION INVERSION ENGINE ---
+  // --- EXACT HARDWARE GEOLOCATION HOOK ---
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -152,29 +153,29 @@ export const Home: React.FC = () => {
           fetchWeatherApi(coordinatesUrlParam, true);
         },
         (error) => {
-          console.warn("Location prompt dismissed. Using default fallback city.");
+          console.warn("Location services access rejected. Using default fallback city.");
           fetchWeatherApi('Cape Town'); 
         },
-        // Setup specialized tracking configuration profiles for iOS Safari stability
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 } 
+        // Maximum settings for high speed mobile device tracking handshake
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } 
       );
     } else {
       fetchWeatherApi('Cape Town');
     }
   }, []);
 
-  // --- SYSTEM METRIC WEATHER ALERTS ENGINE ---
+  // --- AUTOMATED BACKGROUND THREAT CHECKER ---
   const processSystemAlerts = (data: WeatherData) => {
     const customAlertTray: LocalAlert[] = [];
 
     if (data.temperature > 35) {
-      customAlertTray.push({ id: 'heat', type: 'Severe Heat Warning', message: 'Abnormally high temperature metrics. Stay indoors and hydrated.' });
+      customAlertTray.push({ id: 'heat', type: 'Severe Heat Warning', message: 'Abnormally high temperature metrics. Stay indoors and fully hydrated.' });
     }
     if (data.windSpeed > 30) {
-      customAlertTray.push({ id: 'wind', type: 'High Wind Advisory', message: 'Gale-force gusts present. Secure outdoor property items.' });
+      customAlertTray.push({ id: 'wind', type: 'High Wind Advisory', message: 'Gale force gusts detected. Secure unanchored properties.' });
     }
     if (data.humidity > 90) {
-      customAlertTray.push({ id: 'humidity', type: 'Saturation Notice', message: 'Dense atmospheric moisture. Expect reduced road visibility.' });
+      customAlertTray.push({ id: 'humidity', type: 'Saturation Notice', message: 'Dense atmospheric moisture. Expect reduced road visibility conditions.' });
     }
 
     setAlerts(customAlertTray);
@@ -193,7 +194,7 @@ export const Home: React.FC = () => {
     }
   }, []);
 
-  // --- USER INTERACTIVE ACTIONS & PERSISTENCE STATE MUTATION HANDLERS ---
+  // --- USER MOUSE CLICKS ACTION HANDLERS ---
   const handleSearchClick = (event: React.FormEvent) => {
     event.preventDefault();
     if (searchQuery.trim() !== '') {
@@ -244,18 +245,7 @@ export const Home: React.FC = () => {
       </header>
 
       {alerts.length > 0 && (
-        <section className="live-notification-tray" aria-label="System Alerts Area">
+        <section className="live-notification-tray" aria-label="System Alerts Tracker">
           {alerts.map(alertObj => (
             <div key={alertObj.id} className="system-alert-card danger-level">
               <span><strong>⚠️ {alertObj.type}:</strong> {alertObj.message}</span>
-              <button onClick={() => setAlerts(prev => prev.filter(a => a.id !== alertObj.id))} className="dismiss-btn">✕</button>
-            </div>
-          ))}
-        </section>
-      )}
-
-      <section className="search-management-section">
-        <form onSubmit={handleSearchClick} className="search-form-layout">
-          <input
-            type="text"
-            placeholder="Search city location..."
