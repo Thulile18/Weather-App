@@ -1,290 +1,269 @@
 import React, { useState, useEffect } from 'react';
-import './Home.css';
+import { useWeather } from '../Hooks/UseWeather';
+import { useLocation } from '../Hooks/UseLocation';
+import WeatherDisplay from '../../Weather/WeatherDisplay';
+import DailyForecast from '../..//Weather/DailyForecast';
+import WeatherAlert from '../..//Weather/WeatherAlert';
+import Button from '../Button';
+import Input from '../Input';
+import { Link } from 'react-router-dom'; 
+import type{ WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
+import { NotificationService } from '../Utils/Notifications'; 
+import HourlyForecast from '../../Weather/HourlyForecast';
 
-export const API_CONFIG = {
-  BASE_URL: 'https://openweathermap.org',
-  API_KEY: import.meta.env.VITE_WEATHER_API_KEY || '8bb16bb5510615456144f052661fbf80', 
-  UNITS: 'metric'
-};
-
-const STORAGE_KEYS = {
-  SAVED_LOCATIONS: 'weather_saved_locations', 
-  USER_SETTINGS: 'weather_user_settings'
-};
-
-interface WeatherData {
-  city: string;
-  temperature: number; 
-  humidity: number;
-  windSpeed: number;
-  condition: string;
-  iconCode: string;
-  hourly: Array<{ time: string; temp: number; icon: string }>;
-  daily: Array<{ day: string; temp: number; condition: string; icon: string }>;
-}
-
-interface LocalAlert {
-  id: string;
-  type: string;
-  message: string;
-}
-
-export const Home: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [weather, setWeather] = useState<WeatherData | null>(null);
+const Home: React.FC = () => {
+  const [searchQuery, setSearchQuery] = useState('');
   const [viewType, setViewType] = useState<'hourly' | 'daily'>('hourly');
-  const [alerts, setAlerts] = useState<LocalAlert[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [alerts, setAlerts] = useState<WeatherAlertType[]>([]);
+  const [notificationPermission, setNotificationPermission] = useState<boolean>(false);
   
-  const [unit, setUnit] = useState<'C' | 'F'>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.unit || 'C';
-      } catch { return 'C'; }
-    }
-    return 'C';
-  });
+  const {
+    currentWeather,
+    forecast,
+    loading,
+    error,
+    settings,
+    fetchWeather,
+    fetchWeatherByCoords,
+    updateSettings,
+    saveLocation,
+    removeLocation,
+    getFavoriteLocations
+  } = useWeather();
 
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.USER_SETTINGS);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return parsed.theme || 'light';
-      } catch { return 'light'; }
-    }
-    return 'light';
-  });
-
-  const [savedCities, setSavedCities] = useState<string[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.SAVED_LOCATIONS);
-    if (saved) {
-      try { return JSON.parse(saved); } catch { return []; }
-    }
-    return [];
-  });
-
-  const fetchWeatherApi = async (paramString: string, isCoords: boolean = false) => {
-    setLoading(true);
-    setErrorMessage('');
-    let endpoint = `${API_CONFIG.BASE_URL}/forecast?q=${encodeURIComponent(paramString)}&units=${API_CONFIG.UNITS}&appid=${API_CONFIG.API_KEY}`;
-    if (isCoords) {
-      const [lat, lon] = paramString.split(',');
-      endpoint = `${API_CONFIG.BASE_URL}/forecast?lat=${lat}&lon=${lon}&units=${API_CONFIG.UNITS}&appid=${API_CONFIG.API_KEY}`;
-    }
-    try {
-      const response = await fetch(endpoint);
-      if (!response.ok) throw new Error('Target city location could not be found.');
-      const data = await response.json();
-      if (!data || !data.list || data.list.length === 0) throw new Error('Invalid response format.');
-      
-      const currentInfo = data.list[0];
-      const formattedData: WeatherData = {
-        city: data.city && data.city.name ? data.city.name : 'Current Location',
-        temperature: currentInfo.main ? Math.round(currentInfo.main.temp) : 0,
-        humidity: currentInfo.main ? currentInfo.main.humidity : 0,
-        windSpeed: currentInfo.wind ? Math.round(currentInfo.wind.speed * 3.6) : 0, 
-        condition: currentInfo.weather && currentInfo.weather[0] ? currentInfo.weather[0].main : 'Clear',
-        iconCode: currentInfo.weather && currentInfo.weather[0] ? currentInfo.weather[0].icon : '01d',
-        hourly: data.list.slice(0, 4).map((item: any) => ({
-          time: new Date(item.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          temp: item.main ? Math.round(item.main.temp) : 0,
-          icon: item.weather && item.weather[0] ? item.weather[0].icon : '01d'
-        })),
-        daily: data.list.filter((_: any, index: number) => index % 8 === 0).slice(0, 4).map((item: any) => ({
-          day: new Date(item.dt * 1000).toLocaleDateString([], { weekday: 'long' }),
-          temp: item.main ? Math.round(item.main.temp) : 0,
-          condition: item.weather && item.weather[0] ? item.weather[0].main : 'Clear',
-          icon: item.weather && item.weather[0] ? item.weather[0].icon : '01d'
-        }))
-      };
-      setWeather(formattedData);
-      localStorage.setItem('weather_offline_cache', JSON.stringify(formattedData));
-      processSystemAlerts(formattedData);
-    } catch (error: any) {
-      setErrorMessage(error.message || 'Unable to load weather metrics.');
-      const cachedBackup = localStorage.getItem('weather_offline_cache');
-      if (cachedBackup) {
-        try { setWeather(JSON.parse(cachedBackup)); } catch { setWeather(null); }
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { location: userLocation, loading: locationLoading } = useLocation();
+  const favorites = getFavoriteLocations();
 
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const coords = `${position.coords.latitude},${position.coords.longitude}`;
-          fetchWeatherApi(coords, true);
-        },
-        (error) => { fetchWeatherApi('Cape Town'); },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } 
-      );
-    } else {
-      fetchWeatherApi('Cape Town');
-    }
+    const checkPermission = async () => {
+      const granted = await NotificationService.requestPermission();
+      setNotificationPermission(granted);
+    };
+    checkPermission();
   }, []);
 
-  const processSystemAlerts = (data: WeatherData) => {
-    const customAlertTray: LocalAlert[] = [];
-    if (data.temperature > 35) customAlertTray.push({ id: 'heat', type: 'Severe Heat Warning', message: 'Abnormally high temperature metrics.' });
-    if (data.windSpeed > 30) customAlertTray.push({ id: 'wind', type: 'High Wind Advisory', message: 'Gale force gusts detected.' });
-    if (data.humidity > 90) customAlertTray.push({ id: 'humidity', type: 'Saturation Notice', message: 'Dense atmospheric moisture.' });
-    setAlerts(customAlertTray);
-  };
-
-  const handleSearchClick = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (searchQuery.trim() !== '') fetchWeatherApi(searchQuery.trim());
-  };
-
-  const handleUnitToggle = () => {
-    const nextUnit = unit === 'C' ? 'F' : 'C';
-    setUnit(nextUnit);
-    localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify({ unit: nextUnit, theme }));
-  };
-
-  const handleThemeToggle = () => {
-    const nextTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(nextTheme);
-    localStorage.setItem(STORAGE_KEYS.USER_SETTINGS, JSON.stringify({ unit, theme: nextTheme }));
-  };
-
-  const handleBookmarkToggle = () => {
-    if (!weather) return;
-    const targetCityName = weather.city;
-    let nextSavedList: string[] = [];
-    if (savedCities.includes(targetCityName)) {
-      nextSavedList = savedCities.filter(c => c !== targetCityName);
-    } else {
-      nextSavedList = [...savedCities, targetCityName];
+  useEffect(() => {
+    if (userLocation && !currentWeather) {
+      fetchWeatherByCoords(userLocation.lat, userLocation.lon);
     }
-    setSavedCities(nextSavedList);
-    localStorage.setItem(STORAGE_KEYS.SAVED_LOCATIONS, JSON.stringify(nextSavedList));
+  }, [userLocation]);
+
+  useEffect(() => {
+    if (currentWeather) {
+      const newAlerts: WeatherAlertType[] = [];
+      
+      if (currentWeather.temperature > 35) {
+        newAlerts.push({
+          type: 'Heat Warning',
+          severity: 'warning',
+          message: 'Extreme heat detected. Stay hydrated and avoid prolonged sun exposure.',
+          time: new Date().toLocaleString()
+        });
+        NotificationService.sendWeatherAlert(
+          currentWeather.location,
+          'Extreme heat detected! Stay hydrated.',
+          'warning'
+        );
+      }
+      
+      if (currentWeather.windspeed > 15) { 
+        newAlerts.push({
+          type: 'Wind Advisory',
+          severity: 'watch',
+          message: 'High winds expected. Secure outdoor objects.',
+          time: new Date().toLocaleString()
+        });
+        NotificationService.sendWeatherAlert(
+          currentWeather.location,
+          'High winds expected! Secure outdoor objects.',
+          'watch'
+        );
+      }
+
+      if (currentWeather.temperature < 0) {
+        newAlerts.push({
+          type: 'Freeze Warning',
+          severity: 'warning',
+          message: 'Freezing temperatures detected. Protect plants and pipes.',
+          time: new Date().toLocaleString()
+        });
+        NotificationService.sendWeatherAlert(
+          currentWeather.location,
+          'Freezing temperatures! Protect plants and pipes.',
+          'warning'
+        );
+      }
+
+      if (currentWeather.condition.toLowerCase().includes('rain') && currentWeather.temperature > 30) {
+        newAlerts.push({
+          type: 'Storm Alert',
+          severity: 'watch',
+          message: 'Rain with high temperatures. Stay prepared.',
+          time: new Date().toLocaleString()
+        });
+        NotificationService.sendWeatherAlert(
+          currentWeather.location,
+          'Rain with high temperatures. Be prepared.',
+          'watch'
+        );
+      }
+
+      if (currentWeather.condition.toLowerCase().includes('fog')) {
+        newAlerts.push({
+          type: 'Fog Advisory',
+          severity: 'advisory',
+          message: 'Low visibility due to fog. Drive carefully.',
+          time: new Date().toLocaleString()
+        });
+        NotificationService.sendWeatherAlert(
+          currentWeather.location,
+          'Low visibility due to fog. Drive carefully.',
+          'advisory'
+        );
+      }
+
+      setAlerts(newAlerts);
+    }
+  }, [currentWeather]);
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      fetchWeather(searchQuery.trim());
+      setSearchQuery('');
+    }
   };
 
-  const convertTemp = (celsius: number) => {
-    if (unit === 'F') return Math.round((celsius * 9) / 5 + 32);
-    return celsius;
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
   };
 
- return (
-    <div className={`home-container ${theme}`}>
-      <header className="home-header">
-        <h1>Weather App</h1>
-        <div className="header-controls">
-          <button onClick={handleUnitToggle} className="btn-toggle">
-            Scale: °{unit}
-          </button>
-          <button onClick={handleThemeToggle} className="btn-toggle">
-            Mode: {theme === 'light' ? ' Dark' : ' Light'}
-          </button>
+  const toggleUnit = () => {
+    if (settings) {
+      const newUnit = settings.unit === 'celsius' ? 'fahrenheit' : 'celsius';
+      updateSettings({ ...settings, unit: newUnit });
+    }
+  };
+
+  const toggleFavorite = () => {
+    if (currentWeather) {
+      const isFavorite = favorites.includes(currentWeather.location);
+      if (isFavorite) {
+        removeLocation(currentWeather.location);
+      } else {
+        saveLocation(currentWeather.location);
+      }
+    }
+  };
+
+  const dismissAlert = (index: number) => {
+    setAlerts(alerts.filter((_, i) => i !== index));
+  };
+
+  if (loading || locationLoading) {
+    return (
+      <div className="home-status-centered-canvas">
+        <div className="status-message-wrapper">
+          <div className="status-spinner-element"> Syncing </div>
+          <p className="status-caption"> Loading meteorological data... </p>
         </div>
-      </header>
+      </div>
+    );
+  }
 
-      <form onSubmit={handleSearchClick} className="search-form">
-        <input 
-          type="text" 
-          placeholder="Search location..." 
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="search-input"
-        />
-        <button type="submit" className="search-btn">Find</button>
-      </form>
+  if (error) {
+    return (
+      <div className="home-status-centered-canvas">
+        <div className="status-message-wrapper">
+          <div className="error-title-marker">Notice</div>
+          <p className="error-text-details">{error}</p>
+          <Button onClick={() => window.location.reload()}> Try Again </Button>
+        </div>
+      </div>
+    );
+  }
 
-      {loading && <div className="loader">Loading weather metrics...</div>}
-      {errorMessage && <div className="error-banner">{errorMessage}</div>}
+  return (
+    <div className="home-page-container">
+      {!notificationPermission && (
+        <div className="notification-reminder-banner">
+          Attention: Enable notifications in system settings to receive push updates.
+          <Link to="/settings" className="settings-redirect-link">
+            Open Settings →
+          </Link>
+        </div>
+      )}
 
       {alerts.length > 0 && (
-        <div className="alerts-section">
-          {alerts.map((alert) => (
-            <div key={alert.id} className="alert-card">
-              <strong>{alert.type}:</strong> {alert.message}
-            </div>
+        <div className="active-alerts-stack">
+          {alerts.map((alert, index) => (
+            <WeatherAlert
+              key={index}
+              alert={alert}
+              onDismiss={() => dismissAlert(index)}
+            />
           ))}
         </div>
       )}
 
-      {weather && !loading && (
-        <main className="weather-display">
-          <div className="current-weather-card">
-            <h2>
-              {weather.city}
-              <button onClick={handleBookmarkToggle} className="btn-bookmark">
-                {savedCities.includes(weather.city) ? '★ Bookmarked' : '☆ Bookmark'}
-              </button>
-            </h2>
-            <div className="current-main">
-              <img 
-                src={`https://openweathermap.org{weather.iconCode}@2x.png`} 
-                alt={weather.condition} 
-              />
-              <span className="current-temp">{convertTemp(weather.temperature)}°{unit}</span>
+      <div className="search-controls-wrapper">
+        <div className="search-form-row">
+          <Input
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search city location..."
+            onKeyPress={handleKeyPress}
+            className="search-input-field"
+          />
+          <Button onClick={handleSearch} className="search-action-btn">
+            Search
+          </Button>
+        </div>
+      </div>
+
+      {currentWeather && (
+        <div className="weather-dashboard-layout-stack">
+          <WeatherDisplay
+            weather={currentWeather}
+            unit={settings?.unit || 'celsius'}
+            onToggleUnit={toggleUnit}
+            isFavorite={favorites.includes(currentWeather.location)}
+            onToggleFavorite={toggleFavorite}
+          />
+
+          {/* Timeline Selection View Option Switches Tabs */}
+          {forecast && (
+            <div className="forecast-tab-controls-row">
+              <Button
+                variant={viewType === 'hourly' ? 'primary' : 'secondary'}
+                onClick={() => setViewType('hourly')}
+              >
+                Hourly Timeline
+              </Button>
+              <Button
+                variant={viewType === 'daily' ? 'primary' : 'secondary'}
+                onClick={() => setViewType('daily')}
+              >
+                Daily Timeline
+              </Button>
             </div>
-            <p className="condition-text">{weather.condition}</p>
-            <div className="metrics-grid">
-              <div>Humidity: {weather.humidity}%</div>
-              <div>Wind: {weather.windSpeed} km/h</div>
+          )}
+
+          {/* Conditional View Panel rendering */}
+          {forecast && (
+            <div className="forecast-view-panel-node">
+              {viewType === 'hourly' ? (
+                <HourlyForecast forecasts={forecast.hourly} unit='C'/>
+              ) : (
+                <DailyForecast forecasts={forecast.daily} unit='C'/>
+              )}
             </div>
-          </div>
-
-          <div className="forecast-controls">
-            <button 
-              onClick={() => setViewType('hourly')} 
-              className={`btn-tab ${viewType === 'hourly' ? 'active' : ''}`}
-            >
-              Hourly Timeline
-            </button>
-            <button 
-              onClick={() => setViewType('daily')} 
-              className={`btn-tab ${viewType === 'daily' ? 'active' : ''}`}
-            >
-              4-Day Forecast
-            </button>
-          </div>
-
-          <div className="forecast-cards-container">
-            {viewType === 'hourly' ? (
-              weather.hourly.map((hour, idx) => (
-                <div key={idx} className="forecast-mini-card">
-                  <div>{hour.time}</div>
-                  <img src={`https://openweathermap.org{hour.icon}.png`} alt="icon" />
-                  <div>{convertTemp(hour.temp)}°{unit}</div>
-                </div>
-              ))
-            ) : (
-              weather.daily.map((day, idx) => (
-                <div key={idx} className="forecast-mini-card">
-                  <div className="day-name">{day.day}</div>
-                  <img src={`https://openweathermap.org{day.icon}.png`} alt={day.condition} />
-                  <div>{convertTemp(day.temp)}°{unit}</div>
-                </div>
-              ))
-            )}
-          </div>
-        </main>
-      )}
-
-      {savedCities.length > 0 && (
-        <section className="saved-locations-tray">
-          <h3>Tracked Pinpoints</h3>
-          <div className="quick-links">
-            {savedCities.map((city, idx) => (
-              <button key={idx} onClick={() => fetchWeatherApi(city)} className="btn-city-link">
-                {city}
-              </button>
-            ))}
-          </div>
-        </section>
+          )}
+        </div>
       )}
     </div>
   );
-};  
+};
 
 export default Home;
