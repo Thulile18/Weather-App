@@ -1,52 +1,48 @@
 import React from 'react';
 import Card from '../Components/Card';
 
-export interface DailyForecastData {
-  day: string;
+export interface HourlyForecastData {
+  time: string;
+  temperature: number;
   condition: string;
-  high: number;
-  low: number;
 }
 
-interface DailyForecastProps {
-  forecasts: DailyForecastData[];
+interface HourlyForecastProps {
+  forecasts: HourlyForecastData[];
   unit: 'C' | 'F'; 
 }
 
-const DailyForecast: React.FC<DailyForecastProps> = ({ forecasts, unit }) => {
+const HourlyForecast: React.FC<HourlyForecastProps> = ({ forecasts, unit }) => {
   const getTemperature = (temp: number) => {
     return unit === 'C' ? temp : (temp * 9 / 5) + 32;
   };
 
   return (
-    <Card className="daily-forecast-container">
-      <h3 className="daily-forecast-title"> 7-Day Forecast </h3>
+    <Card className="forecast-card-wrapper">
+      <h3 className="forecast-section-title"> Hourly Forecast </h3>
       
-      <div className="vertical-stack-rows">
-        {forecasts.map((forecast, index) => (
-          <div key={index} className="forecast-row-item">
-            
-            <div className="forecast-left-content">
-              <span className="forecast-day-label">{forecast.day}</span>
-              <div className="forecast-emoji-box"></div>
-              <span className="forecast-condition-text">{forecast.condition}</span>
+      <div className="horizontal-scroll-viewport">
+        <div className="scroll-flex-track">
+          {forecasts.map((forecast, index) => (
+            <div key={index} className="forecast-column-node">
+              <div className="node-time-header">{forecast.time}</div>
+              
+              <div className="node-icon-visual-box"></div>
+              
+              <div className="node-temperature-readout">
+                {getTemperature(forecast.temperature).toFixed(1)}°{unit}
+              </div>
+              
+              <div className="node-condition-label" title={forecast.condition}>
+                {forecast.condition}
+              </div>
             </div>
-            
-            <div className="forecast-right-temperatures">
-              <span className="temp-high-readout">
-                {getTemperature(forecast.high).toFixed(1)}°
-              </span>
-              <span className="temp-divider">/</span>
-              <span className="temp-low-readout">
-                {getTemperature(forecast.low).toFixed(1)}°{unit}
-              </span>
-            </div>
-
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </Card>
   );
 };
 
-export default DailyForecast;
+export default HourlyForecast;
+
