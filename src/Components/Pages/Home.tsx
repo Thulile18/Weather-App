@@ -8,8 +8,7 @@ import Button from '../Button';
 import Input from '../Input';
 import { Link } from 'react-router-dom'; 
 import type{ WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
-import { NotificationService } from '../Utils/Notifications';
-import './Home.css'; 
+import { NotificationService } from '../Utils/Notifications'; 
 import HourlyForecast from '../../Weather/HourlyForecast';
 
 const Home: React.FC = () => {

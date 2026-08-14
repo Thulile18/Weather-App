@@ -128,7 +128,7 @@ const Settings: React.FC = () => {
             <h3 className="settings-item-title"> About </h3>
             <p className="settings-info-text"> Weather App </p>
             <p className="settings-sub-text">
-              Built with React, TypeScript, and Pure Vanilla CSS
+              Built with React
             </p>
             <p className="settings-sub-text">
               Data provided by OpenWeatherMap
