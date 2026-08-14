@@ -86,3 +86,4 @@ export const capitalizeFirstLetter = (str: string): string => {
 export const getWeatherIconUrl = (): string => {
   return `https://openweathermap.org{iconCode}@2x.png`;
 };
+export default Notification;

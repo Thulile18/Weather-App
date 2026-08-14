@@ -3,7 +3,7 @@ import { useWeather } from '../Hooks/UseWeather';
 import Button from '../Button';
 import Card from '../Card';
 import { Link } from 'react-router-dom';
-import { NotificationService } from '../Utils/Notifications.ts';
+import Notifications from '../Utils/Notifications.ts';
 import './Settings.css'; 
 
 const Settings: React.FC = () => {
@@ -26,7 +26,7 @@ const Settings: React.FC = () => {
   };
 
   const requestNotificationPermission = async () => {
-    const granted = await NotificationService.requestPermission();
+    const granted = await Notifications.requestPermission();
     if (granted) {
       alert('Notifications enabled! You will receive weather alerts.');
     } else {
