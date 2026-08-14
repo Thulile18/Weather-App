@@ -45,3 +45,4 @@ const HourlyForecast: React.FC<HourlyForecastProps> = ({ forecasts, unit }) => {
 };
 
 export default HourlyForecast;
+
