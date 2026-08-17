@@ -52,18 +52,16 @@ npm run preview
 
  Project Structure
 
-Weather-App/
-├── src/
-│   ├── components/      - Atomic reusable interface components
-│   │   ├── Button.tsx   - Generic action button component
-│   │   ├── Input.tsx    - Generic controlled text text input fields
-│   │   └── WeatherCard.tsx - Meteorological profile card layout
-│   ├── App.tsx          - Main layout coordinator, local storage, and logic states
-│   ├── main.tsx         - Operational compilation entry point
-│   └── index.css        - Plain CSS structural styles blueprint
-├── index.html           - Document Object Model (DOM) container entry
-├── package.json         - Project manifest configuration dependencies
-└── README.md            - System architectural documentation
+Weather-App
+
+src/components/Button.tsx — Generic action button component
+src/components/Input.tsx — Generic controlled text input fields
+src/components/WeatherCard.tsx — Meteorological profile card layout
+src/App.tsx — Main layout coordinator, local storage, and logic states
+src/main.tsx — Operational compilation entry point
+src/index.css — Plain CSS structural styles blueprint
+index.html — Document Object Model (DOM) container entrypackage.json — Project manifest configuration dependencies
+README.md — System architectural documentation
 
 
 Application Features
