@@ -9,6 +9,7 @@ import Input from '../Input';
 import { Link } from 'react-router-dom'; 
 import type { WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
 import HourlyForecast from '../../Weather/HourlyForecast';
+import { requestNotificationPermission, sendWeatherNotification } from '../Utils/Notifications';
 
 export const Home: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,10 +37,8 @@ export const Home: React.FC = () => {
   // Standard student-appropriate browser notification controller logic
   useEffect(() => {
     const checkPermission = async () => {
-      if ('Notification' in window) {
-        const permission = await window.Notification.requestPermission();
-        setNotificationPermission(permission === 'granted');
-      }
+      const granted = await requestNotificationPermission();
+      setNotificationPermission(granted);
     };
     checkPermission();
   }, []);
@@ -61,25 +60,23 @@ export const Home: React.FC = () => {
           message: 'Extreme heat detected. Stay hydrated and avoid prolonged sun exposure.',
           time: new Date().toLocaleString()
         });
-        if ('Notification' in window && window.Notification.permission === 'granted') {
-          new window.Notification(`Weather Alert: ${currentWeather.location}`, {
-            body: 'Extreme heat detected! Stay hydrated.'
-          });
-        }
+        sendWeatherNotification(
+          `Weather Alert: ${currentWeather.location}`,
+          'Extreme heat detected! Stay hydrated.'
+        );
       }
-      
-      if (currentWeather.windspeed > 15) { 
+
+      if (currentWeather.windspeed > 15) {
         newAlerts.push({
           type: 'Wind Advisory',
           severity: 'watch',
           message: 'High winds expected. Secure outdoor objects.',
           time: new Date().toLocaleString()
         });
-        if ('Notification' in window && window.Notification.permission === 'granted') {
-          new window.Notification(`Weather Alert: ${currentWeather.location}`, {
-            body: 'High winds expected! Secure outdoor objects.'
-          });
-        }
+        sendWeatherNotification(
+          `Weather Alert: ${currentWeather.location}`,
+          'High winds expected! Secure outdoor objects.'
+        );
       }
 
       if (currentWeather.temperature < 0) {
@@ -89,11 +86,10 @@ export const Home: React.FC = () => {
           message: 'Freezing temperatures detected. Protect plants and pipes.',
           time: new Date().toLocaleString()
         });
-        if ('Notification' in window && window.Notification.permission === 'granted') {
-          new window.Notification(`Weather Alert: ${currentWeather.location}`, {
-            body: 'Freezing temperatures! Protect plants and pipes.'
-          });
-        }
+        sendWeatherNotification(
+          `Weather Alert: ${currentWeather.location}`,
+          'Freezing temperatures! Protect plants and pipes.'
+        );
       }
 
       if (currentWeather.condition.toLowerCase().includes('rain') && currentWeather.temperature > 30) {
@@ -103,11 +99,10 @@ export const Home: React.FC = () => {
           message: 'Rain with high temperatures. Stay prepared.',
           time: new Date().toLocaleString()
         });
-        if ('Notification' in window && window.Notification.permission === 'granted') {
-          new window.Notification(`Weather Alert: ${currentWeather.location}`, {
-            body: 'Rain with high temperatures. Be prepared.'
-          });
-        }
+        sendWeatherNotification(
+          `Weather Alert: ${currentWeather.location}`,
+          'Rain with high temperatures. Be prepared.'
+        );
       }
 
       if (currentWeather.condition.toLowerCase().includes('fog')) {
@@ -117,11 +112,10 @@ export const Home: React.FC = () => {
           message: 'Low visibility due to fog. Drive carefully.',
           time: new Date().toLocaleString()
         });
-        if ('Notification' in window && window.Notification.permission === 'granted') {
-          new window.Notification(`Weather Alert: ${currentWeather.location}`, {
-            body: 'Low visibility due to fog. Drive carefully.'
-          });
-        }
+        sendWeatherNotification(
+          `Weather Alert: ${currentWeather.location}`,
+          'Low visibility due to fog. Drive carefully.'
+        );
       }
 
       setAlerts(newAlerts);
@@ -254,9 +248,15 @@ export const Home: React.FC = () => {
           {forecast && (
             <div className="forecast-view-panel-node">
               {viewType === 'hourly' ? (
-                <HourlyForecast forecasts={forecast.hourly} unit='C'/>
+                <HourlyForecast
+                  forecasts={forecast.hourly}
+                  unit={settings?.unit === 'fahrenheit' ? 'F' : 'C'}
+                />
               ) : (
-                <DailyForecast forecasts={forecast.daily} unit='C'/>
+                <DailyForecast
+                  forecasts={forecast.daily}
+                  unit={settings?.unit === 'fahrenheit' ? 'F' : 'C'}
+                />
               )}
             </div>
           )}
