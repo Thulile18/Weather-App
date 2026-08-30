@@ -1,6 +1,10 @@
+// The API key comes from an environment variable rather than being
+// hardcoded here, so the real key never sits in the public GitHub
+// source code. Locally it's read from a ".env" file (not committed);
+// on Vercel it's set under Project Settings -> Environment Variables.
 export const API_CONFIG = {
   BASE_URL: 'https://api.openweathermap.org/data/2.5',
-  API_KEY: '8bb16bb5510615456144f052661fbf80', 
+  API_KEY: import.meta.env.VITE_OPENWEATHER_API_KEY as string,
   UNITS: 'metric'
 };
 
