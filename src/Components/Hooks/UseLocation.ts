@@ -23,15 +23,23 @@ export const useLocation = () => {
       (err: GeolocationPositionError) => {
         if (err.code === err.PERMISSION_DENIED) {
           setError('Location access request declined by user privileges. Use search instead.');
+        } else if (err.code === err.TIMEOUT) {
+          setError('Getting an exact GPS position is taking longer than usual (this can happen in areas with weaker signal, like rural or farm locations). Please try again, or search for your location instead.');
         } else {
           setError(err.message);
         }
         setLoading(false);
       },
       {
-        enableHighAccuracy: true, 
-        timeout: 5000,            
-        maximumAge: 0            
+        enableHighAccuracy: true,
+        // 20 seconds instead of 5: a real GPS fix (rather than a rough
+        // network-based guess) can take longer in areas with weaker
+        // cell signal, which is common in rural or farm locations.
+        timeout: 20000,
+        // Accept a position from up to a minute ago instead of
+        // demanding a brand new one every time. This makes the app
+        // respond faster without meaningfully hurting accuracy.
+        maximumAge: 60000
       }
     );
   }, []);
