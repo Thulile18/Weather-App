@@ -1,7 +1,42 @@
-import type { UserSettings } from '../Types/Weather.types';
+import type { UserSettings, WeatherData, ForecastData, CachedWeatherEntry } from '../Types/Weather.types';
 
 export class WeatherStorageService {
-  
+
+  cacheWeather(weather: WeatherData, forecast: ForecastData): void {
+    const cacheEntry: CachedWeatherEntry = {
+      weather,
+      forecast,
+      timestamp: Date.now()
+    };
+    const entryJson = JSON.stringify(cacheEntry);
+    localStorage.setItem(`weather_cache_${weather.location.toLowerCase()}`, entryJson);
+    localStorage.setItem('weather_cache_last', entryJson);
+  }
+
+  getCachedWeather(location?: string): CachedWeatherEntry | null {
+    if (location) {
+      const specific = localStorage.getItem(`weather_cache_${location.toLowerCase()}`);
+      if (specific) {
+        try {
+          return JSON.parse(specific);
+        } catch (e) {
+          
+        }
+      }
+    }
+
+    const last = localStorage.getItem('weather_cache_last');
+    if (last) {
+      try {
+        return JSON.parse(last);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
   getSettings(): UserSettings {
     const data = localStorage.getItem('weather_app_settings');
     if (data) {
