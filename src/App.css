@@ -1,9 +1,3 @@
-/* =============================================================
-   src/App.css
-   Visual design system: glass cards, animated gradient hero,
-   decorative background blobs, all theme-variable driven.
-============================================================= */
-
 :root {
   --bg-app: #eef4ff;
   --bg-card: rgba(255, 255, 255, 0.72);
