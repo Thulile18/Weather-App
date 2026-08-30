@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { WeatherData, ForecastData, HourlyForecast, DailyForecast } from '../Types/Weather.types';
 import { API_CONFIG } from '../Utils/Constants.ts';
+import { getWeatherCondition } from '../Utils/Helpers';
 
 export class WeatherService {
   
@@ -25,7 +26,7 @@ export class WeatherService {
         temperature: data.main.temp,
         humidity: data.main.humidity,
         windspeed: data.wind.speed, 
-        condition: data.weather[0].description,
+        condition: data.weather[0].description || getWeatherCondition(data.weather[0].id),
         icon: `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`,
         timestamp: Date.now()
       };
@@ -66,7 +67,7 @@ export class WeatherService {
         temperature: data.main.temp,
         humidity: data.main.humidity,
         windspeed: data.wind.speed, 
-        condition: data.weather[0].description,
+        condition: data.weather[0].description || getWeatherCondition(data.weather[0].id),
         icon: `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`,
         timestamp: Date.now()
       };
