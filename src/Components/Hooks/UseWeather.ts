@@ -28,8 +28,17 @@ export const useWeather = () => {
       const forecastData = await WeatherService.getForecast(location);
       setForecast(forecastData);
 
+      storage.cacheWeather(weatherData, forecastData);
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to retrieve cloud metrics.');
+      
+      const cached = storage.getCachedWeather(location);
+      if (cached) {
+        setCurrentWeather(cached.weather);
+        setForecast(cached.forecast);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to retrieve cloud metrics.');
+      }
     } finally {
       setLoading(false);
     }
@@ -46,8 +55,16 @@ export const useWeather = () => {
       const forecastData = await WeatherService.getForecast(weatherData.location);
       setForecast(forecastData);
 
+      storage.cacheWeather(weatherData, forecastData);
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to locate regional atmospheric targets.');
+      const cached = storage.getCachedWeather();
+      if (cached) {
+        setCurrentWeather(cached.weather);
+        setForecast(cached.forecast);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to locate regional atmospheric targets.');
+      }
     } finally {
       setLoading(false);
     }
