@@ -64,7 +64,7 @@
   background-color: var(--bg-surface-muted);
   color: var(--text-main);
   border: 1px solid var(--border-ui);
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 20px;
 }
 
