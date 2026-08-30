@@ -82,7 +82,3 @@ export const isWeatherDataExpired = (data: WeatherData): boolean => {
 export const capitalizeFirstLetter = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
-
-export const getWeatherIconUrl = (): string => {
-  return `https://openweathermap.org{iconCode}@2x.png`;
-};
