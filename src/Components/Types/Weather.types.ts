@@ -41,3 +41,9 @@ export interface WeatherAlert {
   message: string;
   time: string;
 }
+
+export interface CachedWeatherEntry {
+  weather: WeatherData;
+  forecast: ForecastData;
+  timestamp: number;
+}
