@@ -2,6 +2,11 @@ import type { UserSettings, WeatherData, ForecastData, CachedWeatherEntry } from
 
 export class WeatherStorageService {
 
+  // Saves the most recently fetched weather so it can still be shown
+  // when the user is offline or a network request fails. We store it
+  // both under the specific city name and under a generic "last" key,
+  // so we always have something to fall back to even if the city name
+  // the user searched for doesn't exactly match a saved entry.
   cacheWeather(weather: WeatherData, forecast: ForecastData): void {
     const cacheEntry: CachedWeatherEntry = {
       weather,
@@ -20,7 +25,7 @@ export class WeatherStorageService {
         try {
           return JSON.parse(specific);
         } catch (e) {
-          
+          // fall through to the generic cache below
         }
       }
     }
