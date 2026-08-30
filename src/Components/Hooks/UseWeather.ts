@@ -28,10 +28,12 @@ export const useWeather = () => {
       const forecastData = await WeatherService.getForecast(location);
       setForecast(forecastData);
 
+      // save this successful result so it can be shown offline later
       storage.cacheWeather(weatherData, forecastData);
 
     } catch (err) {
-      
+      // network request failed, try to fall back to the last saved
+      // weather for this location so the app still shows something
       const cached = storage.getCachedWeather(location);
       if (cached) {
         setCurrentWeather(cached.weather);
