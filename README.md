@@ -15,7 +15,7 @@ Real-time weather app with forecasts, search, and alerts.
  ✨ Features
 - Real-time weather: temperature, humidity, wind speed
 - Forecast views: hourly and daily
-- Toggle view:** easy switch between hourly/daily
+- Toggle view: easy switch between hourly/daily
 - Location detection: browser GPS auto-fetch
 - Rural optimization: generous GPS timeout for low-signal areas
 - Global search: look up any city worldwide
