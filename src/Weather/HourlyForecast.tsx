@@ -1,5 +1,6 @@
 import React from 'react';
 import Card from '../Components/Card';
+import { getWeatherEmoji } from '../Components/Utils/Helpers';
 
 export interface HourlyForecastData {
   time: string;
@@ -27,7 +28,7 @@ const HourlyForecast: React.FC<HourlyForecastProps> = ({ forecasts, unit }) => {
             <div key={index} className="forecast-column-node">
               <div className="node-time-header">{forecast.time}</div>
               
-              <div className="node-icon-visual-box"></div>
+              <div className="node-icon-visual-box">{getWeatherEmoji(forecast.condition)}</div>
               
               <div className="node-temperature-readout">
                 {getTemperature(forecast.temperature).toFixed(1)}°{unit}
