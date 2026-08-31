@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useWeather } from '../Hooks/UseWeather';
 import Button from '../Button';
 import Card from '../Card';
@@ -12,16 +12,17 @@ const Favourites: React.FC = () => {
     currentWeather,
     loading 
   } = useWeather();
-  
-  const [favorites, setFavorites] = useState<string[]>([]);
 
-  useEffect(() => {
-    setFavorites(getFavoriteLocations());
-  }, []);
+  // Read the saved locations directly on every render instead of
+  // copying them into separate state once on mount. The settings
+  // (and therefore the favourites list) load from localStorage
+  // asynchronously, so a "run once" effect could capture an empty
+  // list before that load finishes and never update again. Reading
+  // it directly here means it always reflects the current settings.
+  const favorites = getFavoriteLocations();
 
   const handleRemove = (location: string) => {
     removeLocation(location);
-    setFavorites(getFavoriteLocations()); 
   };
 
   const handleView = (location: string) => {
