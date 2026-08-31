@@ -1,5 +1,6 @@
 import React from 'react';
 import Card from '../Components/Card';
+import { getWeatherEmoji } from '../Components/Utils/Helpers';
 
 export interface DailyForecastData {
   day: string;
@@ -28,7 +29,7 @@ const DailyForecast: React.FC<DailyForecastProps> = ({ forecasts, unit }) => {
             
             <div className="forecast-left-content">
               <span className="forecast-day-label">{forecast.day}</span>
-              <div className="forecast-emoji-box"></div>
+              <div className="forecast-emoji-box">{getWeatherEmoji(forecast.condition)}</div>
               <span className="forecast-condition-text">{forecast.condition}</span>
             </div>
             
