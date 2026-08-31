@@ -1,86 +1,82 @@
- Weather Application
+🌦️ Weather Portal — Responsive Weather Application
 
- Project Description
+ Real-time weather app built with React + TypeScript
 
-This Weather Application is an interactive, data-driven single-page application (SPA) engineered using React and TypeScript. The platform delivers precise meteorological insights by offering real-time weather analytics alongside detailed hourly and daily forecast structures. Users can seamlessly manage geographic locations through an integrated bookmarking mechanism and configure localized measurement units. The system incorporates background weather analytics to dynamically identify severe atmospheric conditions and dispatch system-level process alert notifications.
+[![React](https://img.shields.io/badge/React-19-blue)]()
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)]()
+[![Vite](https://img.shields.io/badge/Vite-Build-purple)]()
+[![Vercel](https://img.shields.io/badge/Deployed-Vercel-black)]()
 
-Production Deployment URL: https://vercel.app
+🔗 Live: `vercel.app` | 👩‍💻 Dev: `Thulile18`
 
-Installation and Setup:
+ 📌 Overview
+Real-time weather app with forecasts, search, and alerts.
 
-Repository Cloning and Execution
+ ✨ Features
+- Real-time weather: temperature, humidity, wind speed
+- Forecast views: hourly and daily
+- Toggle view:** easy switch between hourly/daily
+- Location detection: browser GPS auto-fetch
+- Rural optimization: generous GPS timeout for low-signal areas
+- Global search: look up any city worldwide
+- Saved locations: Favourites page
+- Weather alerts: push notifications for extreme weather
+- Theme toggle: light / dark mode
+- Unit toggle: Celsius / Fahrenheit
+- Offline support: caches last data locally
+- Responsive: 320px to 1200px
 
-Follow these steps to initialize and execute the application in a local development environment:
+  🛠️ Tech Stack
+- Framework: React 19
+- Language: TypeScript
+- Routing: React Router v6
+- Styling: Plain CSS + CSS variables
+- Layout: Flexbox & Grid (no frameworks)
+- Networking: Native fetch API
+- Storage: LocalStorage
+- Build: Vite
+- API: OpenWeatherMap
+- Deploy: Vercel
 
-bash
-Clone the remote version control repository
-git clone https://github.com
-
-Navigate to the root directory of the project
-cd Weather-App
-
- Install required package dependencies
+  Getting Started
+```bash
+git clone https://github.com/Thulile18/Weather-Portal.git
+cd Weather-Portal
 npm install
-
- Initialize the local Vite development server
+cp.env.example.env
 npm run dev
 
- Production Compilation and Assets Optimization
-bash
-Compile and optimize source files for production deployment
-npm run build
+Other scripts:
 
-Preview the compiled production build locally
-npm run preview
+npm run build # Build production
+npm run preview # Preview build
+npm run lint # Lint code
 
- Tech Stack
+🔑 Environment Variables
+You need a free OpenWeatherMap API key.
 
- Category Technology 
+VITE_OPENWEATHER_API_KEY=your_api_key_here
 
- Frontend Framework - React 19
- Programming Language - TypeScript (Strict Typing Enabled) 
- User Interface Styling - Custom Vanilla CSS (Plain CSS Stylesheets) 
- Routing Architecture - React Router v6 
- Network Layer Client - Axios HTTP Client 
- Build Toolchain and Bundler - Vite 
+- `.env` is ignored by `.gitignore`
+- For production, set key in Vercel > Project Settings > Environment Variables
 
- Project Add-ons
+📁 Project Structure
 
-* Live Deployment Instance: https://vercel.app
-* Source Version Control Repository: https://github.com
+src/
+├── App.tsx # Root routing + theme
+├── main.tsx # Entry point
+├── App.css / index.css # Global themes
+├── components/ # Button, Card, Input
+├── hooks/ # useWeather, useLocation
+├── layout/ # Header, Sidebar drawer
+├── pages/ # Home, Favourites
+├── services/ # weather API + localStorage
+├── types/ # TS interfaces
+├── utils/ # constants, formatters
+└── weather/ # WeatherDisplay, HourlyForecast, DailyForecast, WeatherAlert
 
+👩‍💻 Developer
+Built by *Thulile18*
+Repo: `github.com/Thulile18/Weather-Portal`
 
- Project Structure
-
-Weather-App
-
-src/components/Button.tsx — Generic action button component
-src/components/Input.tsx — Generic controlled text input fields
-src/components/WeatherCard.tsx — Meteorological profile card layout
-src/App.tsx — Main layout coordinator, local storage, and logic states
-src/main.tsx — Operational compilation entry point
-src/index.css — Plain CSS structural styles blueprint
-index.html — Document Object Model (DOM) container entrypackage.json — Project manifest configuration dependencies
-README.md — System architectural documentation
-
-
-Application Features
-
-* Real-Time Data Streams: Monitors and displays critical meteorological vectors including temperature, humidity, and wind speed for any set location.
-* Granular Forecast Layers: Offers responsive toggle controllers to alternate between immediate hourly updates and long-range daily parameters.
-* Geographic Target Filtering: Employs an explicit search routine capable of targeting and rendering global city names dynamically.
-* Bookmark State Persistence: Provides storage handlers to instantly save or eliminate location profiles from a favorites register via LocalStorage management.
-* Global Preference Synchronization: Enables users to switch measurement references between Celsius and Fahrenheit metrics seamlessly.
-* Proactive Atmospheric Alerts: Runs real-time diagnostic checks on weather states to notify users of extreme conditions via active process notification banners.
-* Responsive Fluid Layout: Adapts layout elements dynamically to maintain structural integrity across diverse mobile, tablet, and desktop viewports (320px to 1200px).
-* Offline Access Caching: Caches user preferences, application themes, and recently viewed location metrics inside browser memory for 100% data-free loading.
-
-
- Author
-
-Thulile18
-
-* Remote Source Platform: https://github.com
-* Project Repository: https://github.com/Weather-App
-* Live URL: https://vercel.app
 
