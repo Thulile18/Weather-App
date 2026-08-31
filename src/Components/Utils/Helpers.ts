@@ -82,3 +82,26 @@ export const isWeatherDataExpired = (data: WeatherData): boolean => {
 export const capitalizeFirstLetter = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
+
+// Maps the weather condition text (e.g. "light rain", "clear sky")
+// that comes back from the API into a matching emoji. Checked in
+// order from most to least specific, so "light rain" and "heavy
+// rain" both correctly fall through to the general "rain" check.
+export const getWeatherEmoji = (condition: string): string => {
+  const text = condition.toLowerCase();
+
+  if (text.includes('thunderstorm')) return '⛈️';
+  if (text.includes('drizzle')) return '🌦️';
+  if (text.includes('shower')) return '🌧️';
+  if (text.includes('rain')) return '🌧️';
+  if (text.includes('snow') || text.includes('sleet')) return '❄️';
+  if (text.includes('mist') || text.includes('fog') || text.includes('haze') || text.includes('smoke')) return '🌫️';
+  if (text.includes('sand') || text.includes('dust')) return '💨';
+  if (text.includes('tornado') || text.includes('squall')) return '🌪️';
+  if (text.includes('clear')) return '☀️';
+  if (text.includes('few clouds')) return '🌤️';
+  if (text.includes('scattered clouds')) return '⛅';
+  if (text.includes('cloud')) return '☁️';
+
+  return '🌡️';
+};
