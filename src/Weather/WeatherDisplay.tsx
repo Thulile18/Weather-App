@@ -2,7 +2,7 @@ import React from 'react';
 import type { WeatherData } from '../Components/Types/Weather.types';
 import Button from '../Components/Button';
 import Card from '../Components/Card';
-import { formatTemperature, formatDate, capitalizeFirstLetter } from '../Components/Utils/Helpers';
+import { formatTemperature, formatDate, capitalizeFirstLetter, getWeatherEmoji } from '../Components/Utils/Helpers';
 
 interface WeatherDisplayProps {
   weather: WeatherData;
@@ -54,7 +54,7 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({
       <div className="weather-card-body">
         <div className="primary-metrics">
           <div className="icon-wrapper-zoom">
-            <span className="weather-visual-emoji"></span>
+           <span className="weather-visual-emoji">{getWeatherEmoji(weather.condition)}</span>
           </div>
           <div className="temperature-readout-block">
             <div className="temperature-text">
