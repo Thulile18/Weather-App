@@ -1,5 +1,10 @@
 🌦️ Weather Portal — Responsive Weather Application
 
+     Project Image:
+
+<img width="788" height="733" alt="Weather App" src="https://github.com/user-attachments/assets/7954701f-cb26-4dfd-b303-19274819b677" />
+
+
  Real-time weather app built with React + TypeScript
 
 [![React](https://img.shields.io/badge/React-19-blue)]()
