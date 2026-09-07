@@ -75,6 +75,9 @@ src/
 ├── utils/ # constants, formatters
 └── weather/ # WeatherDisplay, HourlyForecast, DailyForecast, WeatherAlert
 
+Add Ons:
+(Google, w3schools.com, AI and Youtube)
+
 👩‍💻 Developer
 Built by *Thulile18*
 Repo: `github.com/Thulile18/Weather-Portal`
