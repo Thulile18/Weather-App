@@ -1,9 +1,8 @@
 🌦️ Weather Portal — Responsive Weather Application
 
-     Project Image:
+     Project Socialify:
 
-<img width="788" height="733" alt="Weather App" src="https://github.com/user-attachments/assets/7954701f-cb26-4dfd-b303-19274819b677" />
-
+<img src="https://socialify.git.ci/Thulile18/Weather-App/image?language=1&owner=1&name=1&stargazers=1&theme=Light" alt="Weather-App" width="640" height="320" />
 
  Real-time weather app built with React + TypeScript
 
