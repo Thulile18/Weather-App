@@ -347,28 +347,25 @@
 .search-action-btn {
   flex-shrink: 0;
 }
-
 .weather-dashboard-layout-stack {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-areas:
-    "weather tabs"
-    "weather panel";
-  align-items: start;
-  gap: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
 }
 
 .weather-dashboard-layout-stack .weather-card-container {
-  grid-area: weather;
-  height: 100%;
+  width: 100%;
+  height: auto;
 }
 
 .weather-dashboard-layout-stack .forecast-tab-controls-row {
-  grid-area: tabs;
+  width: fit-content;
+  margin: 0 auto;
 }
 
 .weather-dashboard-layout-stack .forecast-view-panel-node {
-  grid-area: panel;
+  width: 100%;
 }
 
 .forecast-tab-controls-row {
