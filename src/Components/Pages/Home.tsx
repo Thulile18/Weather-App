@@ -7,7 +7,6 @@ import WeatherAlert from '../../Weather/WeatherAlert';
 import HourlyForecast from '../../Weather/HourlyForecast';
 import Button from '../Button';
 import Input from '../Input';
-import Card from '../Card';
 import type { WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
 import {
   requestNotificationPermission,
@@ -83,7 +82,8 @@ export const Home: React.FC = () => {
         newAlerts.push({
           type: 'Freeze Warning',
           severity: 'warning',
-          message: 'Freezing temperatures detected. Protect plants and pipes.',
+          message:
+            'Freezing temperatures detected. Protect plants and pipes.',
           time: new Date().toLocaleString()
         });
 
@@ -306,63 +306,6 @@ export const Home: React.FC = () => {
               )}
 
             </div>
-          )}
-
-          {/* Weather Summary */}
-          {currentWeather && (
-            <Card className="weather-summary-card">
-
-              <h3 className="weather-summary-title">
-                Weather Summary
-              </h3>
-
-              <div className="weather-summary-grid">
-
-                <div className="weather-summary-item">
-                  <span className="weather-summary-label">
-                    Location
-                  </span>
-
-                  <strong>
-                    {currentWeather.location}
-                  </strong>
-                </div>
-
-                <div className="weather-summary-item">
-                  <span className="weather-summary-label">
-                    Temperature
-                  </span>
-
-                  <strong>
-                    {currentWeather.temperature.toFixed(1)}°
-                    {settings?.unit === 'fahrenheit'
-                      ? 'F'
-                      : 'C'}
-                  </strong>
-                </div>
-
-                <div className="weather-summary-item">
-                  <span className="weather-summary-label">
-                    Humidity
-                  </span>
-
-                  <strong>
-                    {currentWeather.humidity}%
-                  </strong>
-                </div>
-
-                <div className="weather-summary-item">
-                  <span className="weather-summary-label">
-                    Wind
-                  </span>
-
-                  <strong>
-                    {currentWeather.windspeed} m/s
-                  </strong>
-                </div>
-
-              </div>
-            </Card>
           )}
 
         </div>
