@@ -126,14 +126,11 @@
 }
 
 .app-main-content-layout {
-  max-width: 1200px;
   width: 100%;
+  max-width: 1350px;
   margin: 0 auto;
-  padding: 32px 20px;
-  box-sizing: border-box;
+  padding: 28px 40px 40px;
   flex: 1;
-  position: relative;
-  z-index: 1;
 }
 
 .btn-base-element {
