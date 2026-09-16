@@ -259,9 +259,8 @@
   border-color: var(--accent);
 }
 
-
 .home-page-container {
-  max-width: 780px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 8px 0 40px 0;
   box-sizing: border-box;
@@ -334,7 +333,8 @@
 }
 
 .search-controls-wrapper {
-  margin-bottom: 28px;
+  max-width: 700px;
+  margin: 0 auto 28px auto;
 }
 
 .search-form-row {
@@ -352,9 +352,26 @@
 }
 
 .weather-dashboard-layout-stack {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "weather tabs"
+    "weather panel";
+  align-items: start;
   gap: 24px;
+}
+
+.weather-dashboard-layout-stack .weather-card-container {
+  grid-area: weather;
+  height: 100%;
+}
+
+.weather-dashboard-layout-stack .forecast-tab-controls-row {
+  grid-area: tabs;
+}
+
+.weather-dashboard-layout-stack .forecast-view-panel-node {
+  grid-area: panel;
 }
 
 .forecast-tab-controls-row {
@@ -830,7 +847,7 @@
 }
 
 .portfolio-page-wrapper {
-  max-width: 1000px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 8px 0 40px 0;
   box-sizing: border-box;
@@ -915,6 +932,14 @@
   .app-main-content-layout {
     max-width: 720px;
     padding: 28px 18px;
+    .weather-dashboard-layout-stack {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .weather-dashboard-layout-stack .weather-card-container {
+    height: auto;
+  }
   }
 
   .portfolio-responsive-grid {
