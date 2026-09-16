@@ -6,7 +6,6 @@ import DailyForecast from '../../Weather/DailyForecast';
 import WeatherAlert from '../../Weather/WeatherAlert';
 import Button from '../Button';
 import Input from '../Input';
-import { Link } from 'react-router-dom'; 
 import type { WeatherAlert as WeatherAlertType } from '../Types/Weather.types';
 import HourlyForecast from '../../Weather/HourlyForecast';
 import { requestNotificationPermission, sendWeatherNotification } from '../Utils/Notifications';
@@ -15,7 +14,6 @@ export const Home: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewType, setViewType] = useState<'hourly' | 'daily'>('hourly');
   const [alerts, setAlerts] = useState<WeatherAlertType[]>([]);
-  const [notificationPermission, setNotificationPermission] = useState<boolean>(false);
   
   const {
     currentWeather,
@@ -34,13 +32,11 @@ export const Home: React.FC = () => {
   const { location: userLocation, loading: locationLoading } = useLocation();
   const favorites = getFavoriteLocations();
 
-  // Standard student-appropriate browser notification controller logic
+  // Ask for notification permission in the background so severe
+  // weather alerts can be delivered later. The result doesn't need
+  // to be displayed anywhere, so it's not kept in state.
   useEffect(() => {
-    const checkPermission = async () => {
-      const granted = await requestNotificationPermission();
-      setNotificationPermission(granted);
-    };
-    checkPermission();
+    requestNotificationPermission();
   }, []);
 
   useEffect(() => {
@@ -182,14 +178,7 @@ export const Home: React.FC = () => {
 
   return (
     <div className="home-page-container">
-      {!notificationPermission && (
-        <div className="notification-reminder-banner">
-          Attention: Enable notifications in system settings to receive push updates.
-          <Link to="/settings" className="settings-redirect-link">
-            Open Settings →
-          </Link>
-        </div>
-      )}
+      <h2 className="portfolio-section-heading">Weather Dashboard</h2>
 
       {alerts.length > 0 && (
         <div className="active-alerts-stack">
