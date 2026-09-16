@@ -52,7 +52,7 @@ const DailyForecast: React.FC<DailyForecastProps> = ({
 
             <div className="forecast-right-temperatures">
               <span className="temp-high-readout">
-                {getTemperature(forecast.high).toFixed(1)}°
+                {getTemperature(forecast.high).toFixed(1)}°{unit}
               </span>
 
               <span className="temp-divider">
