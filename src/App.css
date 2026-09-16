@@ -1113,3 +1113,54 @@
   background-color: var(--bg-surface-muted);
   color: var(--accent);
 }
+
+/* Weather Summary */
+
+.weather-summary-card {
+  width: 100%;
+}
+
+.weather-summary-title {
+  margin: 0 0 18px;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.weather-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.weather-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background-color: var(--bg-surface-muted);
+  border: 1px solid var(--border-ui);
+  border-radius: var(--radius-sm);
+}
+
+.weather-summary-label {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.weather-summary-item strong {
+  font-size: 1rem;
+}
+
+/* Tablet */
+@media (max-width: 768px) {
+  .weather-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Phone */
+@media (max-width: 480px) {
+  .weather-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
