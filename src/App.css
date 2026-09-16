@@ -706,8 +706,8 @@
 
 .scroll-flex-track {
   display: flex;
-  gap: 14px;
-  min-width: max-content;
+  gap: 12px;
+  width: 100%;
 }
 
 .forecast-column-node {
@@ -715,6 +715,7 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
+  flex: 1;
   min-width: 88px;
   padding: 16px 12px;
   background-color: var(--bg-surface-muted);
